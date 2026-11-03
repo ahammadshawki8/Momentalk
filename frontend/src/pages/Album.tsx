@@ -1,7 +1,7 @@
 import { useState, type CSSProperties } from 'react'
 import type { Health, Prefs, Scene } from '../api'
 import { accentStyle, useMomentColor } from '../color'
-import { CameraIcon, PlayIcon } from '../components/Icons'
+import { CameraIcon, SettingsIcon } from '../components/Icons'
 import { Logo } from '../components/Logo'
 import { SettingsSheet } from '../components/SettingsSheet'
 import { TodayCard } from '../components/TodayCard'
@@ -59,28 +59,23 @@ export function Album({ scenes, health, personName, onOpen, onSnap, onPlay, onSc
   const ready = scenes.some((s) => s.status === 'approved')
 
   return (
-    <div className="mx-auto min-h-full max-w-5xl px-4 pb-32 pt-5 sm:px-8">
-      <header className="flex items-center justify-between gap-3">
+    <div className="px-safe pt-safe mx-auto min-h-full max-w-5xl pb-[calc(7rem+env(safe-area-inset-bottom))] sm:px-8">
+      <header className="flex h-12 items-center justify-between gap-2">
         <Logo />
         <span className="flex-1" />
         {health?.language_model.open_weights === 'true' && (
-          <span className="hidden rounded-full bg-white px-3 py-1.5 text-sm font-bold sm:inline">Private Mode</span>
+          <span className="rounded-full bg-white px-3 py-1.5 text-sm font-bold">Private</span>
         )}
-        <button onClick={() => setSettingsOpen(true)} className="rounded-full bg-white px-4 py-2.5 font-bold shadow-[0_2px_10px_rgba(21,23,26,0.08)]">
-          Settings
-        </button>
         <button
-          onClick={onPlay}
-          disabled={!ready}
-          className="flex items-center gap-2 rounded-full bg-white py-1.5 pl-1.5 pr-4 font-bold shadow-[0_2px_10px_rgba(21,23,26,0.08)] transition hover:-translate-y-0.5 disabled:opacity-50"
+          onClick={() => setSettingsOpen(true)}
+          aria-label="Settings"
+          className="flex h-11 w-11 items-center justify-center rounded-full bg-white shadow-[0_2px_10px_rgba(21,23,26,0.08)] active:scale-95"
         >
-          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#ffc95c] text-ink">{personName[0]}</span>
-          <PlayIcon className="h-3.5 w-3.5" />
-          <span>Open for {personName}</span>
+          <SettingsIcon />
         </button>
       </header>
 
-      <section className="rise mt-9">
+      <section className="rise mt-6 sm:mt-9">
         <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">{personName}'s world</h1>
         <p className="mt-2 text-lg text-muted">
           {scenes.length === 0
@@ -147,14 +142,25 @@ export function Album({ scenes, health, personName, onOpen, onSnap, onPlay, onSc
         <SettingsSheet prefs={prefs} health={health} onClose={() => setSettingsOpen(false)} onSaved={onPrefs} />
       )}
 
-      <div className="pointer-events-none fixed inset-x-0 bottom-6 flex justify-center">
-        <button
-          onClick={onSnap}
-          className="group pointer-events-auto flex items-center gap-2.5 rounded-full bg-ink px-7 py-4 text-lg font-bold text-white shadow-[0_14px_34px_rgba(21,23,26,0.35)] transition duration-300 hover:-translate-y-0.5 active:scale-95"
-        >
-          <CameraIcon className="h-6 w-6 transition-transform duration-500 group-hover:-rotate-12 group-active:scale-90" />
-          Snap a moment
-        </button>
+      {/* Thumb zone dock: the two things a caregiver does most, always within reach. */}
+      <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 bg-gradient-to-t from-canvas via-canvas/90 to-transparent pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-8">
+        <div className="pointer-events-auto mx-auto flex max-w-md gap-3 px-4">
+          <button
+            onClick={onPlay}
+            disabled={!ready}
+            className="flex h-14 flex-1 items-center justify-center gap-2 rounded-full bg-white font-bold shadow-[0_8px_24px_rgba(21,23,26,0.14)] transition active:scale-95 disabled:opacity-50"
+          >
+            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#ffc95c] text-ink">{personName[0]}</span>
+            Open for {personName}
+          </button>
+          <button
+            onClick={onSnap}
+            className="group flex h-14 flex-1 items-center justify-center gap-2 rounded-full bg-ink font-bold text-white shadow-[0_10px_28px_rgba(21,23,26,0.35)] transition active:scale-95"
+          >
+            <CameraIcon className="h-6 w-6 transition-transform duration-500 group-hover:-rotate-12" />
+            Snap
+          </button>
+        </div>
       </div>
     </div>
   )

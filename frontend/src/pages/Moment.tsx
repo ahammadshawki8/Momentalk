@@ -41,12 +41,15 @@ export function Moment({ scene, personName, reveal, onBack, onPlay, onChanged, o
   }
 
   return (
-    <div className="mx-auto min-h-full max-w-5xl px-4 pb-16 pt-5 sm:px-8" style={accentStyle(color)}>
-      <button onClick={onBack} className="flex items-center gap-1 rounded-full py-2 pr-3 font-bold text-muted hover:text-ink">
-        <BackIcon /> {personName}'s world
-      </button>
+    <div className="mx-auto min-h-full max-w-5xl overflow-x-clip pb-[calc(6.5rem+env(safe-area-inset-bottom))] sm:px-8" style={accentStyle(color)}>
+      {/* Sticky app bar: back is always one thumb reach away. */}
+      <div className="px-safe pt-safe sticky top-0 z-30 -mb-1 flex h-[calc(3.5rem+env(safe-area-inset-top))] items-center bg-canvas/85 backdrop-blur-md sm:static sm:bg-transparent sm:backdrop-blur-none">
+        <button onClick={onBack} className="-ml-2 flex h-11 items-center gap-1 rounded-full pl-1 pr-3 font-bold text-muted active:bg-white hover:text-ink">
+          <BackIcon /> {personName}'s world
+        </button>
+      </div>
 
-      <div className="mt-4 grid gap-8 lg:grid-cols-[1fr_360px]">
+      <div className="mt-2 grid gap-6 sm:mt-4 sm:gap-8 lg:grid-cols-[1fr_360px]">
         <div>
           <div className="relative">
             {/* Ambient light: the photo's own colors spill softly onto the page. */}
@@ -63,10 +66,11 @@ export function Moment({ scene, personName, reveal, onBack, onPlay, onChanged, o
               onSelect={(h) => setSelected(h.id)}
               onEmptyTap={addAt}
               onHover={setHovered}
+              rounded="rounded-none sm:rounded-[24px]"
               className="relative shadow-[0_20px_50px_rgba(21,23,26,0.18)]"
             />
           </div>
-          <p className="mt-4 text-sm text-muted">
+          <p className="mt-3 px-4 text-sm text-muted sm:px-0">
             {note ??
               (scene.hotspots.length === 0
                 ? 'Not outlined yet. Connect the Meta API key and SAM 3.1 will outline everything in this photo.'
@@ -74,11 +78,11 @@ export function Moment({ scene, personName, reveal, onBack, onPlay, onChanged, o
           </p>
         </div>
 
-        <aside className="rise">
+        <aside className="rise px-4 sm:px-0">
           <h1 className="text-3xl font-bold tracking-tight">{scene.title}</h1>
           <p className="mt-1 text-muted">
             {scene.hotspots.length} {scene.hotspots.length === 1 ? 'word' : 'words'}
-            {scene.kind === 'video' ? ' that follow along as it plays' : ''}
+            {scene.kind === 'video' ? (scene.hotspots.length === 1 ? ' that follows along' : ' that follow along') : ''}
             {scene.build_seconds ? `, made in ${scene.build_seconds} seconds` : ''}
           </p>
 
@@ -119,28 +123,34 @@ export function Moment({ scene, personName, reveal, onBack, onPlay, onChanged, o
             }} />
           )}
 
+        </aside>
+      </div>
+
+      {/* Sticky primary action in the thumb zone. */}
+      <div className="fixed inset-x-0 bottom-0 z-30 bg-gradient-to-t from-canvas via-canvas/90 to-transparent pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-6">
+        <div className="mx-auto max-w-md px-4">
           {scene.status === 'draft' ? (
             <button
               onClick={async () => {
                 await api.approve(scene.id)
                 await onChanged()
               }}
-              className="mt-6 flex w-full items-center justify-center gap-2 rounded-full bg-ink py-4 text-lg font-bold text-white"
+              className="flex h-14 w-full items-center justify-center gap-2 rounded-full bg-ink text-lg font-bold text-white shadow-[0_10px_28px_rgba(21,23,26,0.35)] active:scale-[0.98]"
             >
               <CheckIcon /> Approve for {personName}
             </button>
           ) : (
             <button
               onClick={() => onPlay(scene)}
-              className="mt-6 flex w-full items-center justify-center gap-2.5 rounded-full bg-ink py-4 text-lg font-bold text-white transition hover:-translate-y-0.5"
+              className="flex h-14 w-full items-center justify-center gap-2.5 rounded-full bg-ink text-lg font-bold text-white shadow-[0_10px_28px_rgba(21,23,26,0.35)] transition active:scale-[0.98]"
             >
-              <span className="flex h-7 w-7 items-center justify-center rounded-full" style={{ background: 'var(--accent)', color: 'var(--accent-ink)' }}>
+              <span className="flex h-8 w-8 items-center justify-center rounded-full" style={{ background: 'var(--accent)', color: 'var(--accent-ink)' }}>
                 <PlayIcon className="h-3.5 w-3.5" />
               </span>
               Open for {personName}
             </button>
           )}
-        </aside>
+        </div>
       </div>
     </div>
   )
@@ -162,7 +172,7 @@ function WordRow({ hotspot, open, lit, onHover, onToggle, onSave, onRemove }: {
   return (
     <li onPointerEnter={() => onHover(true)} onPointerLeave={() => onHover(false)}>
       <button onClick={onToggle} onFocus={() => onHover(true)} onBlur={() => onHover(false)}
-              className="group flex w-full items-center gap-3 py-3.5 text-left" aria-expanded={open}>
+              className="group flex min-h-14 w-full items-center gap-3 py-3 text-left active:bg-white/60" aria-expanded={open}>
         <span className={`h-3 w-3 shrink-0 rounded-full transition-transform duration-300 ${lit ? 'scale-150' : ''}`} style={{ background: 'var(--accent)' }} aria-hidden="true" />
         <span className="min-w-0 flex-1">
           <span className="block text-lg font-bold">{hotspot.label}</span>
@@ -177,7 +187,7 @@ function WordRow({ hotspot, open, lit, onHover, onToggle, onSave, onRemove }: {
               e.stopPropagation()
               void new Audio(hotspot.audio_url).play()
             }}
-            className="flex h-9 w-9 items-center justify-center rounded-full bg-white shadow-sm"
+            className="flex h-11 w-11 items-center justify-center rounded-full bg-white shadow-sm active:scale-95"
           >
             <PlayIcon className="h-3.5 w-3.5" />
           </span>

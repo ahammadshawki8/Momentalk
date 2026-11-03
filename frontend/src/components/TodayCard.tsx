@@ -52,7 +52,7 @@ export function TodayCard({ personName, apiReady, onDraftsReady }: TodayCardProp
           <span className="block text-sm text-muted">Momentalk picks the best moments for {personName} and makes drafts for you to approve.</span>
         </span>
         <FilePicker inputRef={input} onFiles={async (files) => setInbox(await api.addToInbox(files))} />
-        <button onClick={() => input.current?.click()} className="rounded-full bg-canvas px-4 py-2 font-bold">Add photos</button>
+        <button onClick={() => input.current?.click()} className="h-11 rounded-full bg-canvas px-4 font-bold active:scale-95">Add photos</button>
       </div>
     )
   }
@@ -82,7 +82,7 @@ export function TodayCard({ personName, apiReady, onDraftsReady }: TodayCardProp
                 setError(e instanceof Error ? e.message : String(e))
               }
             }}
-            className="flex items-center gap-2 rounded-full bg-ink px-5 py-2.5 font-bold text-white disabled:opacity-40"
+            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-ink px-5 font-bold text-white active:scale-[0.98] disabled:opacity-40 sm:w-auto"
           >
             <SparkIcon /> Make moments from today
           </button>

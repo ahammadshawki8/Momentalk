@@ -34,9 +34,10 @@ export function SettingsSheet({ prefs, health, onClose, onSaved }: SettingsSheet
         role="dialog"
         aria-modal="true"
         aria-labelledby="settings-title"
-        className="rise w-full max-w-md rounded-t-[28px] bg-white p-6 shadow-2xl sm:rounded-[28px]"
+        className="rise max-h-[88dvh] w-full max-w-md overflow-y-auto rounded-t-[28px] bg-white px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-3 shadow-2xl sm:rounded-[28px] sm:pt-6"
         onClick={(e) => e.stopPropagation()}
       >
+        <div className="mx-auto mb-4 h-1.5 w-10 rounded-full bg-line sm:hidden" aria-hidden="true" />
         <h2 id="settings-title" className="text-2xl font-bold">Settings</h2>
 
         <label className="mt-5 flex flex-col gap-1.5 text-sm text-muted">
@@ -75,8 +76,8 @@ export function SettingsSheet({ prefs, health, onClose, onSaved }: SettingsSheet
 
         {error && <p className="mt-3 text-sm text-danger">{error}</p>}
         <div className="mt-6 flex justify-end gap-2">
-          <button onClick={onClose} className="rounded-full px-5 py-2.5 font-bold text-muted">Cancel</button>
-          <button onClick={() => void save()} className="rounded-full bg-ink px-6 py-2.5 font-bold text-white">Save</button>
+          <button onClick={onClose} className="h-12 rounded-full px-5 font-bold text-muted">Cancel</button>
+          <button onClick={() => void save()} className="h-12 rounded-full bg-ink px-7 font-bold text-white active:scale-95">Save</button>
         </div>
       </div>
     </div>

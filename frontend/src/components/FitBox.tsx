@@ -1,7 +1,7 @@
 import { useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 
 /** Fills its parent and renders children at the largest size that keeps the given aspect ratio. */
-export function FitBox({ aspect, children }: { aspect: number; children: ReactNode }) {
+export function FitBox({ aspect, align = 'center', children }: { aspect: number; align?: 'center' | 'start'; children: ReactNode }) {
   const outer = useRef<HTMLDivElement>(null)
   const [size, setSize] = useState<{ w: number; h: number } | null>(null)
 
@@ -20,7 +20,7 @@ export function FitBox({ aspect, children }: { aspect: number; children: ReactNo
   }, [aspect])
 
   return (
-    <div ref={outer} className="flex h-full w-full items-center justify-center">
+    <div ref={outer} className={`flex h-full w-full justify-center ${align === 'start' ? 'items-start' : 'items-center'}`}>
       {size && <div style={{ width: size.w, height: size.h }}>{children}</div>}
     </div>
   )

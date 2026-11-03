@@ -35,7 +35,15 @@ export const BackIcon = ({ className = 'h-5 w-5' }: IconProps) => (
   </svg>
 )
 
-export const SparkIcon = ({ className = 'h-4 w-4' }: IconProps) => (
+export const SettingsIcon = ({ className = 'h-5 w-5' }: IconProps) => (
+  <svg viewBox="0 0 24 24" className={className} aria-hidden="true" {...base}>
+    <path d="M4 7h10M18 7h2M4 17h4M12 17h8" />
+    <circle cx="16" cy="7" r="2" />
+    <circle cx="10" cy="17" r="2" />
+  </svg>
+)
+
+export const SparkIcon =({ className = 'h-4 w-4' }: IconProps) => (
   <svg viewBox="0 0 24 24" className={className} aria-hidden="true" fill="currentColor">
     <path d="M12 2.5l1.9 6.1 6.1 1.9-6.1 1.9L12 18.5l-1.9-6.1L4 10.5l6.1-1.9z" />
   </svg>

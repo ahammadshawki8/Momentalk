@@ -21,6 +21,8 @@ interface SceneCanvasProps {
   onSelect?: (hotspot: Hotspot) => void
   onEmptyTap?: (x: number, y: number) => void
   onHover?: (hotspotId: string | null) => void
+  /** Speak a hotspot from outside the photo (word buttons), as if it was tapped. */
+  speakRequest?: HeardPulse | null
   className?: string
 }
 
@@ -43,7 +45,7 @@ function topCenter(poly: Point[]): [number, number] {
 /** A photo whose people and things are outlined hotspots that speak when touched. */
 export function SceneCanvas({
   scene, mode, selectedId, heard = [], reveal = false, showLabels = false, rounded = 'rounded-[24px]',
-  transitionName, onSpeak, onSelect, onEmptyTap, onHover, className = '',
+  transitionName, onSpeak, onSelect, onEmptyTap, onHover, speakRequest, className = '',
 }: SceneCanvasProps) {
   const [pressed, setPressed] = useState<string | null>(null)
   const [tapped, setTapped] = useState<string | null>(null)
@@ -88,6 +90,14 @@ export function SceneCanvas({
     window.setTimeout(() => setStickers((s) => s.filter((item) => item.key !== key)), 1950)
     onSpeak?.(h)
   }
+
+  const speakRef = useRef(speak)
+  speakRef.current = speak
+  useEffect(() => {
+    if (!speakRequest) return
+    const h = scene.hotspots.find((x) => x.id === speakRequest.hotspotId)
+    if (h) speakRef.current(h)
+  }, [speakRequest, scene.hotspots])
 
   function activate(h: Hotspot) {
     if (mode === 'speak') speak(h)
