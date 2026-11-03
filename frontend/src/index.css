@@ -1,0 +1,209 @@
+@import "tailwindcss";
+
+@theme {
+  --color-canvas: #f1f2f4;
+  --color-card: #ffffff;
+  --color-ink: #15171a;
+  --color-ink-2: #2b2f35;
+  --color-muted: #6b7079;
+  --color-line: #e3e5e9;
+  --color-stage: #101214;
+  --color-danger: #c8341c;
+  --font-sans: "Atkinson Hyperlegible", ui-sans-serif, system-ui, sans-serif;
+  --font-toy: "Rubik", ui-rounded, system-ui, sans-serif;
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+:root {
+  /* Every moment sets its own accent from its photo. */
+  --accent: #ffc95c;
+  --accent-ink: #15171a;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+:focus-visible {
+  outline: 3px solid var(--color-ink);
+  outline-offset: 3px;
+}
+
+/* ---------- Hotspots ---------- */
+
+.hotspot {
+  cursor: pointer;
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform 420ms var(--ease-spring);
+}
+
+.hotspot:focus {
+  outline: none;
+}
+
+.hotspot-shape {
+  fill: rgba(255, 255, 255, 0);
+  stroke: #ffffff;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 4px color-mix(in srgb, var(--accent) 80%, transparent));
+  transition: fill 200ms ease;
+}
+
+.hotspot:hover .hotspot-shape {
+  fill: rgba(255, 255, 255, 0.14);
+}
+
+.hotspot:focus-visible .hotspot-shape,
+.hotspot.is-selected .hotspot-shape {
+  stroke: var(--accent);
+  fill: color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+.hotspot.is-pressed {
+  transform: scale(0.95);
+  transition-duration: 90ms;
+}
+
+.hotspot.is-pressed .hotspot-shape,
+.hotspot.is-tapped .hotspot-shape {
+  fill: color-mix(in srgb, var(--accent) 42%, transparent);
+  stroke: var(--accent);
+  filter: drop-shadow(0 0 10px var(--accent));
+}
+
+.hotspot.is-heard .hotspot-shape {
+  animation: heard 1.5s var(--ease-out) 1;
+}
+
+@keyframes heard {
+  0% { fill: color-mix(in srgb, var(--accent) 60%, transparent); stroke: var(--accent); filter: drop-shadow(0 0 16px var(--accent)); }
+  100% { fill: rgba(255, 255, 255, 0); stroke: #ffffff; }
+}
+
+/* The reveal: outlines draw themselves around each thing, one after another. */
+.hotspot.is-revealing .hotspot-shape {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: trace 900ms cubic-bezier(0.65, 0, 0.35, 1) forwards;
+  animation-delay: var(--delay);
+}
+
+@keyframes trace {
+  to { stroke-dashoffset: 0; }
+}
+
+.reveal-label {
+  opacity: 0;
+  animation: label-pop 520ms var(--ease-spring) forwards;
+  animation-delay: calc(var(--delay) + 650ms);
+}
+
+@keyframes label-pop {
+  from { opacity: 0; transform: translate(-50%, -80%) scale(0.6); }
+  to { opacity: 1; transform: translate(-50%, -100%) scale(1); }
+}
+
+/* Sticker that pops out of a tapped hotspot. */
+.sticker {
+  font-family: var(--font-toy);
+  background: #ffffff;
+  color: var(--color-ink);
+  border: 3px solid var(--color-ink);
+  box-shadow: 0 5px 0 var(--color-ink);
+  animation: sticker 1.9s var(--ease-spring) forwards;
+}
+
+@keyframes sticker {
+  0% { opacity: 0; transform: translate(-50%, -40%) scale(0.4) rotate(-10deg); }
+  12% { opacity: 1; transform: translate(-50%, -108%) scale(1.06) rotate(4deg); }
+  22% { transform: translate(-50%, -104%) scale(1) rotate(-3deg); }
+  32% { transform: translate(-50%, -105%) scale(1) rotate(-2deg); }
+  82% { opacity: 1; transform: translate(-50%, -106%) scale(1) rotate(-2deg); }
+  100% { opacity: 0; transform: translate(-50%, -116%) scale(0.95) rotate(-2deg); }
+}
+
+/* Chunky physical button used on the child's side. */
+.press {
+  box-shadow: 0 6px 0 var(--press-shadow, #000);
+  transition: transform 120ms var(--ease-out), box-shadow 120ms var(--ease-out);
+}
+
+.press:active {
+  transform: translateY(5px);
+  box-shadow: 0 1px 0 var(--press-shadow, #000);
+}
+
+/* Scan shimmer while models work. */
+.scan {
+  background: linear-gradient(100deg, transparent 30%, color-mix(in srgb, var(--accent) 45%, transparent) 50%, transparent 70%);
+  background-size: 250% 100%;
+  animation: scan 1.5s linear infinite;
+}
+
+@keyframes scan {
+  from { background-position: 120% 0; }
+  to { background-position: -120% 0; }
+}
+
+.rise {
+  animation: rise 520ms var(--ease-out) both;
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* Switching moments in the person's view: a soft, quick crossfade with a hint of depth. */
+.swap-in {
+  animation: swap-in 420ms var(--ease-out) both;
+}
+
+@keyframes swap-in {
+  from { opacity: 0; transform: scale(0.97); }
+  to { opacity: 1; transform: none; }
+}
+
+.listening-ring {
+  animation: ring 1.4s var(--ease-out) infinite;
+}
+
+@keyframes ring {
+  from { transform: scale(1); opacity: 0.7; }
+  to { transform: scale(1.6); opacity: 0; }
+}
+
+/* Shared element transitions between album, moment, and the child's view. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 260ms;
+}
+
+::view-transition-group(moment-photo) {
+  animation-duration: 520ms;
+  animation-timing-function: var(--ease-out);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after,
+  ::view-transition-group(*) {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
