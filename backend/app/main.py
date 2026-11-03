@@ -11,7 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from . import live, meta_client, store, tts
+from . import agent, live, meta_client, prefs, store, tts
 from .config import settings
 from .cost import BudgetExceeded
 from .pipelines import scene as scene_pipeline
@@ -41,7 +41,10 @@ def _progress(job: dict[str, Any]):
 async def _run_job(job: dict[str, Any], coro) -> None:
     try:
         result = await coro
-        job["scene_id"] = result["id"]
+        if job["kind"] == "agent":
+            job["run"] = result
+        else:
+            job["scene_id"] = result["id"]
         job["status"] = "done"
     except BudgetExceeded as exc:
         job["status"], job["error"] = "error", str(exc)
@@ -53,7 +56,33 @@ async def _run_job(job: dict[str, Any], coro) -> None:
 
 @app.get("/api/health")
 def health() -> dict:
-    return {"ok": True, "api_key": settings.has_api_key, "cost": meta_client.ledger.summary()}
+    return {
+        "ok": True,
+        "api_key": settings.has_api_key,
+        "open_weights_available": settings.has_open_weights,
+        "language_model": meta_client.language_model(),
+        "cost": meta_client.ledger.summary(),
+    }
+
+
+@app.get("/api/prefs")
+def get_prefs() -> dict:
+    return prefs.load()
+
+
+class PrefsUpdate(BaseModel):
+    person_name: str | None = None
+    language: str | None = None
+    voice: str | None = None
+    private_mode: bool | None = None
+
+
+@app.patch("/api/prefs")
+def update_prefs(update: PrefsUpdate) -> dict:
+    data = update.model_dump(exclude_none=True)
+    if data.get("private_mode") and not settings.has_open_weights:
+        raise HTTPException(409, "Private Mode needs an open weights partner key (OPEN_WEIGHTS_API_KEY)")
+    return prefs.save(data)
 
 
 @app.get("/api/scenes")
@@ -185,3 +214,28 @@ def record_tap(scene_id: str, tap: TapEvent) -> dict:
 @app.websocket("/ws/live/{scene_id}")
 async def live_modeling(ws: WebSocket, scene_id: str) -> None:
     await live.live_session(ws, scene_id)
+
+
+# ---------- Moment Builder agent (Muse Wonder) ----------
+
+@app.get("/api/inbox")
+def list_inbox() -> list[dict]:
+    return [{**m, "url": store.media_url(agent.INBOX / m["file"])} for m in agent.list_media()]
+
+
+@app.post("/api/inbox")
+async def add_to_inbox(photos: list[UploadFile] = File(...)) -> list[dict]:
+    for photo in photos:
+        image, _, _ = scene_pipeline.prepare_image(await photo.read())
+        (agent.INBOX / f"{store.new_id('m_')}.jpg").write_bytes(image)
+    return list_inbox()
+
+
+@app.post("/api/agent/run")
+async def run_agent() -> dict:
+    if not settings.has_api_key:
+        raise HTTPException(503, "Meta API key not configured")
+    job = _new_job("agent")
+    person = prefs.load()["person_name"]
+    asyncio.create_task(_run_job(job, agent.run_moment_builder(person_name=person, progress=_progress(job))))
+    return job

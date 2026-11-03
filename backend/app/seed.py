@@ -56,8 +56,21 @@ async def seed_built() -> None:
         print(f"built {scene['id']} '{title}': {len(scene['hotspots'])} hotspots in {scene['build_seconds']}s")
 
 
+def seed_inbox() -> None:
+    """Today's photos for the Moment Builder agent demo."""
+    from .agent import INBOX
+
+    for old in INBOX.glob("m_demo_*.jpg"):
+        old.unlink()
+    for path in sorted(PHOTOS.glob("inbox_*.jpg")):
+        image, _, _ = prepare_image(path.read_bytes())
+        (INBOX / f"m_demo_{path.stem.removeprefix('inbox_')}.jpg").write_bytes(image)
+        print(f"inbox {path.name}")
+
+
 async def main() -> None:
     clear_demo()
+    seed_inbox()
     if "--build" in sys.argv:
         await seed_built()
     else:

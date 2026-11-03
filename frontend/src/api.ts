@@ -36,26 +36,52 @@ export interface Scene {
 }
 
 export interface JobStage {
-  stage: 'understanding' | 'segmenting' | 'voicing' | 'done'
+  stage: 'understanding' | 'segmenting' | 'voicing' | 'done' | 'agent_start' | 'agent_step'
   t: number
   model?: string
   count?: number
   labels?: string[]
   seconds?: number
+  tool?: string
+  detail?: string
+  drafts?: number
+}
+
+export interface AgentRun {
+  id: string
+  note: string | null
+  drafts: string[]
 }
 
 export interface Job {
   id: string
+  kind?: string
   status: 'running' | 'done' | 'error'
   stages: JobStage[]
   scene_id: string | null
+  run?: AgentRun
   error: string | null
 }
 
 export interface Health {
   ok: boolean
   api_key: boolean
+  open_weights_available: boolean
+  language_model: { id: string; name: string; open_weights: string }
   cost: { cap_usd: number; total_usd: number }
+}
+
+export interface Prefs {
+  person_name: string
+  language: string
+  voice: string | null
+  private_mode: boolean
+}
+
+export interface InboxItem {
+  media_id: string
+  file: string
+  url: string
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
@@ -107,6 +133,15 @@ export const api = {
     request<{ ok: boolean }>(`/api/scenes/${sceneId}/hotspots/${hotspotId}`, { method: 'DELETE' }),
   addHotspotAt: (sceneId: string, x: number, y: number) =>
     request<Hotspot>(`/api/scenes/${sceneId}/hotspots/at-point`, json('POST', { x, y })),
+  prefs: () => request<Prefs>('/api/prefs'),
+  updatePrefs: (patch: Partial<Prefs>) => request<Prefs>('/api/prefs', json('PATCH', patch)),
+  inbox: () => request<InboxItem[]>('/api/inbox'),
+  addToInbox: (files: File[]) => {
+    const form = new FormData()
+    files.forEach((f) => form.append('photos', f))
+    return request<InboxItem[]>('/api/inbox', { method: 'POST', body: form })
+  },
+  runAgent: () => request<Job>('/api/agent/run', { method: 'POST' }),
   recordTap: (sceneId: string, hotspotId: string) =>
     request<{ ok: boolean }>(`/api/scenes/${sceneId}/taps`, json('POST', { hotspot_id: hotspotId })),
 }

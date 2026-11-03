@@ -1,8 +1,10 @@
-import type { CSSProperties } from 'react'
-import type { Health, Scene } from '../api'
+import { useState, type CSSProperties } from 'react'
+import type { Health, Prefs, Scene } from '../api'
 import { accentStyle, useMomentColor } from '../color'
 import { CameraIcon, PlayIcon } from '../components/Icons'
 import { Logo } from '../components/Logo'
+import { SettingsSheet } from '../components/SettingsSheet'
+import { TodayCard } from '../components/TodayCard'
 
 interface AlbumProps {
   scenes: Scene[]
@@ -11,6 +13,9 @@ interface AlbumProps {
   onOpen: (scene: Scene) => void
   onSnap: () => void
   onPlay: () => void
+  onScenesChanged: () => Promise<void>
+  prefs: Prefs | null
+  onPrefs: (p: Prefs) => void
 }
 
 function wordCount(scenes: Scene[]) {
@@ -47,15 +52,23 @@ function MomentTile({ scene, large = false, onOpen }: { scene: Scene; large?: bo
 }
 
 /** The caregiver's home: the person's world as an album of talking moments. */
-export function Album({ scenes, health, personName, onOpen, onSnap, onPlay }: AlbumProps) {
+export function Album({ scenes, health, personName, onOpen, onSnap, onPlay, onScenesChanged, prefs, onPrefs }: AlbumProps) {
+  const [settingsOpen, setSettingsOpen] = useState(false)
   const [latest, ...rest] = scenes
   const drafts = scenes.filter((s) => s.status === 'draft')
   const ready = scenes.some((s) => s.status === 'approved')
 
   return (
     <div className="mx-auto min-h-full max-w-5xl px-4 pb-32 pt-5 sm:px-8">
-      <header className="flex items-center justify-between">
+      <header className="flex items-center justify-between gap-3">
         <Logo />
+        <span className="flex-1" />
+        {health?.language_model.open_weights === 'true' && (
+          <span className="hidden rounded-full bg-white px-3 py-1.5 text-sm font-bold sm:inline">Private Mode</span>
+        )}
+        <button onClick={() => setSettingsOpen(true)} className="rounded-full bg-white px-4 py-2.5 font-bold shadow-[0_2px_10px_rgba(21,23,26,0.08)]">
+          Settings
+        </button>
         <button
           onClick={onPlay}
           disabled={!ready}
@@ -72,9 +85,11 @@ export function Album({ scenes, health, personName, onOpen, onSnap, onPlay }: Al
         <p className="mt-2 text-lg text-muted">
           {scenes.length === 0
             ? `Snap a photo and every person and thing in it becomes a word ${personName} can tap.`
-            : `${scenes.length} ${scenes.length === 1 ? 'moment' : 'moments'}, ${wordCount(scenes)} words to tap`}
+            : `${scenes.length} ${scenes.length === 1 ? 'moment' : 'moments'}, ${wordCount(scenes)} ${wordCount(scenes) === 1 ? 'word' : 'words'} to tap`}
         </p>
       </section>
+
+      <TodayCard personName={personName} apiReady={!!health?.api_key} onDraftsReady={onScenesChanged} />
 
       {drafts.length > 0 && (
         <button
@@ -126,6 +141,10 @@ export function Album({ scenes, health, personName, onOpen, onSnap, onPlay }: Al
 
       {health && !health.api_key && (
         <p className="mt-6 text-center text-sm text-muted">Demo mode: connect the Meta API key to make new moments.</p>
+      )}
+
+      {settingsOpen && prefs && (
+        <SettingsSheet prefs={prefs} health={health} onClose={() => setSettingsOpen(false)} onSaved={onPrefs} />
       )}
 
       <div className="pointer-events-none fixed inset-x-0 bottom-6 flex justify-center">

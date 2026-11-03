@@ -111,7 +111,7 @@ async def build_photo_scene(raw: bytes, *, language: str = "en", person_name: st
     scene_id = store.new_id("s_")
     folder = store.scene_dir(scene_id)
     (folder / "photo.jpg").write_bytes(image)
-    await report("understanding", model="Muse Spark 1.3")
+    await report("understanding", model=meta_client.language_model()["name"])
 
     plan = await meta_client.chat_json(
         [{"role": "user", "content": [
@@ -179,7 +179,7 @@ async def build_photo_scene(raw: bytes, *, language: str = "en", person_name: st
         "created_by": created_by,
         "created_at": time.time(),
         "build_seconds": round(time.time() - started, 1),
-        "models": ["muse-spark-1.3", "sam-3.1"],
+        "models": [meta_client.language_model()["id"], "sam-3.1"],
         "hotspots": hotspots,
     }
     store.save_scene(scene)

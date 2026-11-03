@@ -38,10 +38,29 @@ def _client(timeout: float = 120) -> httpx.AsyncClient:
     )
 
 
-async def _post_json(path: str, body: dict, timeout: float = 120) -> dict:
-    ledger.check()
+def private_mode_active() -> bool:
+    from . import prefs
+
+    return bool(prefs.load().get("private_mode")) and settings.has_open_weights
+
+
+def language_model() -> dict[str, str]:
+    """Which model handles language and vision reasoning right now (shown in the UI per step)."""
+    if private_mode_active():
+        return {"id": settings.open_model, "name": f"Muse Spark Open on {settings.open_provider}", "open_weights": "true"}
+    return {"id": settings.spark_model, "name": "Muse Spark 1.3", "open_weights": "false"}
+
+
+async def _post_json(path: str, body: dict, timeout: float = 120, *, open_weights: bool = False) -> dict:
+    if not open_weights:
+        ledger.check()
     delay = 1.0
-    async with _client(timeout) as client:
+    client_cm = (
+        httpx.AsyncClient(base_url=settings.open_base_url, timeout=timeout,
+                          headers={"Authorization": f"Bearer {settings.open_api_key}"})
+        if open_weights else _client(timeout)
+    )
+    async with client_cm as client:
         for attempt in range(4):
             resp = await client.post(path, json=body)
             if resp.status_code in RETRY_STATUS and attempt < 3:
@@ -64,19 +83,22 @@ def image_data_url(data: bytes, mime: str = "image/jpeg") -> str:
 async def chat(messages: list[dict], *, model: str | None = None, schema: dict | None = None,
                schema_name: str = "result", tools: list[dict] | None = None,
                reasoning_effort: str | None = "low", max_tokens: int = 4000) -> dict:
-    model = model or settings.spark_model
+    # Private Mode routes default Spark work to Muse Spark Open on partner inference.
+    use_open = model is None and private_mode_active()
+    model = settings.open_model if use_open else (model or settings.spark_model)
     body: dict[str, Any] = {"model": model, "messages": messages, "max_completion_tokens": max_tokens}
     if schema:
         body["response_format"] = {"type": "json_schema",
                                    "json_schema": {"name": schema_name, "schema": schema, "strict": True}}
     if tools:
         body["tools"] = tools
-    if reasoning_effort:
+    if reasoning_effort and not use_open:
         body["reasoning_effort"] = reasoning_effort
-    data = await _post_json("/chat/completions", body)
-    usage = data.get("usage") or {}
-    kind = "wonder" if "wonder" in model else "spark"
-    ledger.record(kind, llm_cost(kind, usage.get("prompt_tokens", 0), usage.get("completion_tokens", 0)))
+    data = await _post_json("/chat/completions", body, open_weights=use_open)
+    if not use_open:  # partner inference is billed to partner credits, not the Meta credit
+        usage = data.get("usage") or {}
+        kind = "wonder" if "wonder" in model else "spark"
+        ledger.record(kind, llm_cost(kind, usage.get("prompt_tokens", 0), usage.get("completion_tokens", 0)))
     return data
 
 

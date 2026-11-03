@@ -79,6 +79,13 @@ export function Moment({ scene, personName, reveal, onBack, onPlay, onChanged }:
             {scene.build_seconds ? `, made in ${scene.build_seconds} seconds` : ''}
           </p>
 
+          {scene.agent_note && (
+            <p className="mt-4 rounded-2xl bg-white p-3.5 text-sm shadow-sm">
+              <span className="block font-bold">Why Momentalk picked this</span>
+              {scene.agent_note}
+            </p>
+          )}
+
           <ul className="mt-5 divide-y divide-line border-y border-line">
             {scene.hotspots.map((h) => (
               <WordRow

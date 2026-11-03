@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { api, type Health, type Job, type Scene } from './api'
+import { api, type Health, type Job, type Prefs, type Scene } from './api'
 import { Album } from './pages/Album'
 import { Building } from './pages/Building'
 import { Moment } from './pages/Moment'
@@ -13,17 +13,20 @@ type View =
   | { name: 'building' }
   | { name: 'user'; sceneId?: string }
 
-const PERSON_NAME = 'Maya'
 
 export default function App() {
   const [view, setView] = useState<View>({ name: 'album' })
   const [scenes, setScenes] = useState<Scene[] | null>(null)
   const [health, setHealth] = useState<Health | null>(null)
+  const [prefs, setPrefs] = useState<Prefs | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [job, setJob] = useState<Job | null>(null)
   const [pendingPhoto, setPendingPhoto] = useState<string | null>(null)
   const [pendingIsVideo, setPendingIsVideo] = useState(false)
   const fileInput = useRef<HTMLInputElement>(null)
+
+  const PERSON_NAME = prefs?.person_name ?? 'Maya'
+  const LANGUAGE = prefs?.language ?? 'en'
 
   const go = useCallback((next: View) => withTransition(() => setView(next)), [])
 
@@ -39,6 +42,7 @@ export default function App() {
   useEffect(() => {
     void refresh()
     void api.health().then(setHealth).catch(() => undefined)
+    void api.prefs().then(setPrefs).catch(() => undefined)
   }, [refresh])
 
   useEffect(() => {
@@ -62,7 +66,7 @@ export default function App() {
     setJob(null)
     go({ name: 'building' })
     try {
-      const opts = { language: 'en', personName: PERSON_NAME }
+      const opts = { language: LANGUAGE, personName: PERSON_NAME }
       setJob(await (isVideo ? api.createVideoScene(file, opts) : api.createPhotoScene(file, opts)))
     } catch (e) {
       const message = e instanceof Error && e.message.includes('key')
@@ -130,6 +134,12 @@ export default function App() {
         onOpen={(s) => go({ name: 'moment', sceneId: s.id })}
         onSnap={() => fileInput.current?.click()}
         onPlay={() => go({ name: 'user' })}
+        onScenesChanged={refresh}
+        prefs={prefs}
+        onPrefs={(p) => {
+          setPrefs(p)
+          void api.health().then(setHealth)
+        }}
       />
     </>
   )

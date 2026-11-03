@@ -107,7 +107,7 @@ async def build_video_scene(raw: bytes, filename: str, *, language: str = "en", 
     width, height, fps = info["width"], info["height"], info["fps"]
     frame_count = int(info["duration"] * fps) or 1
 
-    await report("understanding", model="Muse Spark 1.3")
+    await report("understanding", model=meta_client.language_model()["name"])
     plan = await meta_client.chat_json(
         [{"role": "user", "content": [
             {"type": "text", "text": concept_prompt(language, person_name, narration)
@@ -155,7 +155,7 @@ async def build_video_scene(raw: bytes, filename: str, *, language: str = "en", 
         "language": language, "status": "draft" if created_by == "agent" else "approved",
         "created_by": created_by, "created_at": time.time(),
         "build_seconds": round(time.time() - started, 1),
-        "models": ["muse-spark-1.3", "sam-3.1"], "hotspots": hotspots,
+        "models": [meta_client.language_model()["id"], "sam-3.1"], "hotspots": hotspots,
     }
     store.save_scene(scene)
     await report("done", scene_id=scene_id, seconds=scene["build_seconds"])
