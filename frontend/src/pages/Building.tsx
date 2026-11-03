@@ -4,14 +4,19 @@ import { CheckIcon } from '../components/Icons'
 
 const STEPS = [
   { stage: 'understanding', model: 'Muse Spark', text: (_?: Job['stages'][number]) => 'Seeing who and what is here' },
-  { stage: 'segmenting', model: 'SAM 3.1', text: (s?: Job['stages'][number]) => (s?.labels?.length ? `Outlining ${s.labels.join(', ')}` : 'Outlining each one') },
+  { stage: 'segmenting', model: 'SAM 3.1', text: (s?: Job['stages'][number]) => (s?.labels?.length ? `Outlining ${s.labels.join(', ')}` : 'Outlining each one, frame by frame') },
   { stage: 'voicing', model: 'Voice', text: (_?: Job['stages'][number]) => 'Giving every outline a voice' },
 ]
 const ORDER = ['understanding', 'segmenting', 'voicing', 'done']
 
 /** Full focus on the new photo while each model reports in. */
-export function Building({ photoUrl, job, onCancel }: { photoUrl: string; job: Job | null; onCancel: () => void }) {
-  const color = useMomentColor(photoUrl)
+export function Building({ photoUrl, isVideo = false, job, onCancel }: {
+  photoUrl: string
+  isVideo?: boolean
+  job: Job | null
+  onCancel: () => void
+}) {
+  const color = useMomentColor(isVideo ? undefined : photoUrl)
   const reached = new Map<string, Job['stages'][number]>((job?.stages ?? []).map((s) => [s.stage, s]))
   const latest = Math.max(0, ...[...reached.keys()].map((k) => ORDER.indexOf(k)))
   const failed = job?.status === 'error'
@@ -19,7 +24,11 @@ export function Building({ photoUrl, job, onCancel }: { photoUrl: string; job: J
   return (
     <div className="mx-auto min-h-full max-w-3xl px-4 pb-16 pt-8 sm:px-8" style={accentStyle(color)}>
       <div className="relative overflow-hidden rounded-[24px] bg-stage shadow-[0_20px_50px_rgba(21,23,26,0.2)]">
-        <img src={photoUrl} alt="Your new moment" className="block max-h-[60vh] w-full object-cover" />
+        {isVideo ? (
+          <video src={photoUrl} className="block max-h-[60vh] w-full object-cover" autoPlay muted loop playsInline aria-label="Your new moment" />
+        ) : (
+          <img src={photoUrl} alt="Your new moment" className="block max-h-[60vh] w-full object-cover" />
+        )}
         {!failed && <div className="scan absolute inset-0" aria-hidden="true" />}
       </div>
 

@@ -15,6 +15,7 @@ from . import live, meta_client, store, tts
 from .config import settings
 from .cost import BudgetExceeded
 from .pipelines import scene as scene_pipeline
+from .pipelines import video as video_pipeline
 
 app = FastAPI(title="Momentalk API")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
@@ -87,6 +88,19 @@ async def create_photo_scene(photo: UploadFile = File(...), language: str = Form
     job = _new_job("photo")
     asyncio.create_task(_run_job(job, scene_pipeline.build_photo_scene(
         raw, language=language, person_name=person_name, narration=narration, progress=_progress(job))))
+    return job
+
+
+@app.post("/api/scenes/video")
+async def create_video_scene(video: UploadFile = File(...), language: str = Form("en"),
+                             person_name: str = Form("me"), narration: str | None = Form(None)) -> dict:
+    if not settings.has_api_key:
+        raise HTTPException(503, "Meta API key not configured")
+    raw = await video.read()
+    job = _new_job("video")
+    asyncio.create_task(_run_job(job, video_pipeline.build_video_scene(
+        raw, video.filename or "clip.mp4", language=language, person_name=person_name,
+        narration=narration, progress=_progress(job))))
     return job
 
 

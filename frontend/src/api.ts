@@ -11,6 +11,8 @@ export interface Hotspot {
   confidence: number | null
   order: number
   audio_url?: string
+  /** Video scenes only: outline keyframes over time (seconds), sampled by SAM 3.1 tracking. */
+  track?: { t: number; poly: Point[] }[]
 }
 
 export interface Scene {
@@ -18,6 +20,8 @@ export interface Scene {
   kind: 'photo' | 'video' | 'wish'
   title: string
   media_url: string
+  video_url?: string
+  duration?: number
   width: number
   height: number
   language: string
@@ -88,6 +92,13 @@ export const api = {
     form.append('person_name', opts.personName)
     if (opts.narration) form.append('narration', opts.narration)
     return request<Job>('/api/scenes/photo', { method: 'POST', body: form })
+  },
+  createVideoScene: (video: File, opts: { language: string; personName: string }) => {
+    const form = new FormData()
+    form.append('video', video)
+    form.append('language', opts.language)
+    form.append('person_name', opts.personName)
+    return request<Job>('/api/scenes/video', { method: 'POST', body: form })
   },
   job: (id: string) => request<Job>(`/api/jobs/${id}`),
   updateHotspot: (sceneId: string, hotspotId: string, patch: Partial<Pick<Hotspot, 'label' | 'phrase' | 'synonyms'>>) =>

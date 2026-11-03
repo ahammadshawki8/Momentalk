@@ -22,6 +22,7 @@ export default function App() {
   const [loadError, setLoadError] = useState<string | null>(null)
   const [job, setJob] = useState<Job | null>(null)
   const [pendingPhoto, setPendingPhoto] = useState<string | null>(null)
+  const [pendingIsVideo, setPendingIsVideo] = useState(false)
   const fileInput = useRef<HTMLInputElement>(null)
 
   const go = useCallback((next: View) => withTransition(() => setView(next)), [])
@@ -55,11 +56,14 @@ export default function App() {
 
   async function handlePhoto(file: File) {
     const url = URL.createObjectURL(file)
+    const isVideo = file.type.startsWith('video/')
     setPendingPhoto(url)
+    setPendingIsVideo(isVideo)
     setJob(null)
     go({ name: 'building' })
     try {
-      setJob(await api.createPhotoScene(file, { language: 'en', personName: PERSON_NAME }))
+      const opts = { language: 'en', personName: PERSON_NAME }
+      setJob(await (isVideo ? api.createVideoScene(file, opts) : api.createPhotoScene(file, opts)))
     } catch (e) {
       const message = e instanceof Error && e.message.includes('key')
         ? 'Momentalk is not connected to the Meta API yet, so this photo cannot be turned into a moment.'
@@ -72,8 +76,7 @@ export default function App() {
     <input
       ref={fileInput}
       type="file"
-      accept="image/*"
-      capture="environment"
+      accept="image/*,video/mp4,video/quicktime"
       className="hidden"
       onChange={(e) => {
         const file = e.target.files?.[0]
@@ -98,7 +101,7 @@ export default function App() {
   }
 
   if (view.name === 'building' && pendingPhoto) {
-    return <Building photoUrl={pendingPhoto} job={job} onCancel={() => go({ name: 'album' })} />
+    return <Building photoUrl={pendingPhoto} isVideo={pendingIsVideo} job={job} onCancel={() => go({ name: 'album' })} />
   }
 
   if (view.name === 'moment') {

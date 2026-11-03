@@ -1,6 +1,7 @@
-import { useMemo, useRef, useState, type CSSProperties } from 'react'
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import type { Hotspot, Point, Scene } from '../api'
 import { pop } from '../feedback'
+import { polygonsAt } from '../track'
 
 export interface HeardPulse {
   hotspotId: string
@@ -52,6 +53,22 @@ export function SceneCanvas({
   // Ref, not state: pointerup can arrive before React re-renders after pointerdown on fast taps.
   const pressedRef = useRef<string | null>(null)
 
+  const isVideo = scene.kind === 'video' && !!scene.video_url
+  const video = useRef<HTMLVideoElement | null>(null)
+  const [now, setNow] = useState<number | null>(isVideo ? 0 : null)
+
+  // Follow the playing video so tracked outlines move with people and things.
+  useEffect(() => {
+    if (!isVideo) return
+    let frame = 0
+    const tick = () => {
+      if (video.current) setNow(video.current.currentTime)
+      frame = requestAnimationFrame(tick)
+    }
+    frame = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(frame)
+  }, [isVideo])
+
   const ordered = useMemo(() => [...scene.hotspots].sort((a, b) => a.order - b.order), [scene.hotspots])
   const heardKey = useMemo(() => new Map(heard.map((h) => [h.hotspotId, h.key])), [heard])
   const strokeWidth = Math.max(2.5, scene.width / 360)
@@ -63,7 +80,7 @@ export function SceneCanvas({
       audio.current = new Audio(h.audio_url)
       window.setTimeout(() => void audio.current?.play().catch(() => undefined), 50)
     }
-    const [x, y] = topCenter(h.polygons[0])
+    const [x, y] = topCenter(polygonsAt(h, now)[0] ?? h.polygons[0])
     const key = ++counter.current
     setTapped(h.id)
     setStickers((s) => [...s.slice(-1), { key, label: h.phrase, x, y }])
@@ -88,7 +105,21 @@ export function SceneCanvas({
       className={`relative select-none overflow-hidden bg-stage ${rounded} ${className}`}
       style={{ aspectRatio: `${scene.width} / ${scene.height}`, viewTransitionName: transitionName } as CSSProperties}
     >
-      <img src={scene.media_url} alt={scene.title} className="absolute inset-0 h-full w-full object-cover" draggable={false} />
+      {isVideo ? (
+        <video
+          ref={video}
+          src={scene.video_url}
+          poster={scene.media_url}
+          className="absolute inset-0 h-full w-full object-cover"
+          autoPlay
+          muted
+          loop
+          playsInline
+          aria-label={scene.title}
+        />
+      ) : (
+        <img src={scene.media_url} alt={scene.title} className="absolute inset-0 h-full w-full object-cover" draggable={false} />
+      )}
       <svg
         viewBox={`0 0 ${scene.width} ${scene.height}`}
         preserveAspectRatio="none"
@@ -138,7 +169,7 @@ export function SceneCanvas({
                 }
               }}
             >
-              {h.polygons.map((poly, i) => (
+              {polygonsAt(h, now).map((poly, i) => (
                 <polygon key={i} points={toPoints(poly, scene.width, scene.height)} pathLength={1}
                          className="hotspot-shape" strokeWidth={strokeWidth} />
               ))}
@@ -149,7 +180,9 @@ export function SceneCanvas({
 
       {(showLabels || reveal) &&
         ordered.map((h, index) => {
-          const [x, y] = topCenter(h.polygons[0])
+          const current = polygonsAt(h, now)[0]
+          if (!current) return null
+          const [x, y] = topCenter(current)
           return (
             <span
               key={`label-${h.id}`}

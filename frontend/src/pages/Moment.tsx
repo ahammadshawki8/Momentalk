@@ -74,7 +74,8 @@ export function Moment({ scene, personName, reveal, onBack, onPlay, onChanged }:
         <aside className="rise">
           <h1 className="text-3xl font-bold tracking-tight">{scene.title}</h1>
           <p className="mt-1 text-muted">
-            {scene.hotspots.length} words
+            {scene.hotspots.length} {scene.hotspots.length === 1 ? 'word' : 'words'}
+            {scene.kind === 'video' ? ' that follow along as it plays' : ''}
             {scene.build_seconds ? `, made in ${scene.build_seconds} seconds` : ''}
           </p>
 
