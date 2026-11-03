@@ -8,8 +8,15 @@ function lerpPoly(a: Point[], b: Point[], k: number): Point[] {
   return a.map(([x, y], i) => [x + (b[i][0] - x) * k, y + (b[i][1] - y) * k])
 }
 
+const valid = (poly: Point[] | undefined): poly is Point[] =>
+  !!poly && poly.length >= 3 && poly.every(([x, y]) => Number.isFinite(x) && Number.isFinite(y))
+
 /** Outline of a hotspot at time t. Photos return their static polygons; videos interpolate their track. */
 export function polygonsAt(h: Hotspot, t: number | null): Point[][] {
+  return rawPolygonsAt(h, t).filter(valid)
+}
+
+function rawPolygonsAt(h: Hotspot, t: number | null): Point[][] {
   if (!h.track || h.track.length === 0 || t === null) return h.polygons
   const keys = h.track
   if (t <= keys[0].t) return t >= keys[0].t - MAX_GAP ? [keys[0].poly] : []

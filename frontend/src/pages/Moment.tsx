@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { api, type Hotspot, type Scene } from '../api'
 import { accentStyle, useMomentColor } from '../color'
 import { BackIcon, CheckIcon, PlayIcon } from '../components/Icons'
+import { Narrate } from '../components/Narrate'
+import { WishMaker } from '../components/WishMaker'
 import { SceneCanvas } from '../components/SceneCanvas'
 
 interface MomentProps {
@@ -11,10 +13,11 @@ interface MomentProps {
   onBack: () => void
   onPlay: (scene: Scene) => void
   onChanged: () => Promise<void>
+  onOpenScene: (sceneId: string) => void
 }
 
 /** One moment: the outlined photo and its words, ready to adjust and share with the person. */
-export function Moment({ scene, personName, reveal, onBack, onPlay, onChanged }: MomentProps) {
+export function Moment({ scene, personName, reveal, onBack, onPlay, onChanged, onOpenScene }: MomentProps) {
   const color = useMomentColor(scene.media_url)
   const [selected, setSelected] = useState<string | null>(null)
   const [hovered, setHovered] = useState<string | null>(null)
@@ -107,6 +110,14 @@ export function Moment({ scene, personName, reveal, onBack, onPlay, onChanged }:
               />
             ))}
           </ul>
+
+          {!scene.placeholder && <Narrate scene={scene} onApplied={onChanged} />}
+          {scene.kind !== 'wish' && (
+            <WishMaker scene={scene} personName={personName} onMade={async (id) => {
+              await onChanged()
+              onOpenScene(id)
+            }} />
+          )}
 
           {scene.status === 'draft' ? (
             <button

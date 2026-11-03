@@ -15,7 +15,9 @@ from . import agent, live, meta_client, prefs, store, tts
 from .config import settings
 from .cost import BudgetExceeded
 from .pipelines import scene as scene_pipeline
+from .pipelines import narration
 from .pipelines import video as video_pipeline
+from .pipelines import wish as wish_pipeline
 
 app = FastAPI(title="Momentalk API")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
@@ -238,4 +240,43 @@ async def run_agent() -> dict:
     job = _new_job("agent")
     person = prefs.load()["person_name"]
     asyncio.create_task(_run_job(job, agent.run_moment_builder(person_name=person, progress=_progress(job))))
+    return job
+
+
+# ---------- Narrated Labels (Muse Voice Transcribe plus Muse Spark) ----------
+
+@app.post("/api/scenes/{scene_id}/narration")
+async def narrate_scene(scene_id: str, audio: UploadFile = File(...)) -> dict:
+    scene = get_scene(scene_id)
+    if not settings.has_api_key:
+        raise HTTPException(503, "Meta API key not configured")
+    return await narration.propose_from_narration(scene, await audio.read(), audio.filename or "narration.webm")
+
+
+class NarrationApply(BaseModel):
+    changes: list[dict]
+    title: str | None = None
+
+
+@app.post("/api/scenes/{scene_id}/narration/apply")
+async def apply_narration(scene_id: str, body: NarrationApply) -> dict:
+    return await narration.apply_changes(get_scene(scene_id), body.changes, body.title)
+
+
+# ---------- Wish Scenes (Muse Image) ----------
+
+class WishRequest(BaseModel):
+    activity: str
+
+
+@app.post("/api/scenes/{scene_id}/wish")
+async def make_wish(scene_id: str, body: WishRequest) -> dict:
+    place = get_scene(scene_id)
+    if not settings.has_api_key:
+        raise HTTPException(503, "Meta API key not configured")
+    p = prefs.load()
+    job = _new_job("wish")
+    asyncio.create_task(_run_job(job, wish_pipeline.build_wish_scene(
+        place, body.activity.strip()[:80], person_name=p["person_name"], language=p["language"],
+        progress=_progress(job))))
     return job

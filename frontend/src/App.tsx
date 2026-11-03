@@ -119,6 +119,7 @@ export default function App() {
           onBack={() => go({ name: 'album' })}
           onPlay={(s) => go({ name: 'user', sceneId: s.id })}
           onChanged={refresh}
+          onOpenScene={(id) => go({ name: 'moment', sceneId: id, reveal: true })}
         />
       )
     }
