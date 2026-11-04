@@ -3,10 +3,11 @@ import { api, type Job, type Scene } from '../api'
 import { SparkIcon } from './Icons'
 
 /** "Imagine Maya here": Muse Image puts an illustrated avatar into this place, doing something they want. */
-export function WishMaker({ scene, personName, language, onStarted }: {
+export function WishMaker({ scene, personName, language, avatarId, onStarted }: {
   scene: Scene
   personName: string
   language: string
+  avatarId?: string
   onStarted: (job: Job) => void
 }) {
   const [activity, setActivity] = useState('')
@@ -22,7 +23,7 @@ export function WishMaker({ scene, personName, language, onStarted }: {
         setError(null)
         setSending(true)
         try {
-          onStarted(await api.makeWish(scene.id, { activity: activity.trim(), person_name: personName, language }))
+          onStarted(await api.makeWish(scene.id, { activity: activity.trim(), person_name: personName, language, avatar_id: avatarId }))
         } catch (err) {
           setError(err instanceof Error ? err.message : String(err))
           setSending(false)

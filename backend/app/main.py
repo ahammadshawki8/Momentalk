@@ -18,6 +18,7 @@ from . import agent, live, meta_client, prefs, public_demo, store, tts
 from .config import settings
 from .cost import BudgetExceeded
 from .pipelines import scene as scene_pipeline
+from .pipelines import avatar as avatar_pipeline
 from .pipelines import narration
 from .pipelines import video as video_pipeline
 from .pipelines import wish as wish_pipeline
@@ -49,6 +50,8 @@ async def _run_job(job: dict[str, Any], coro) -> None:
         result = await coro
         if job["kind"] == "agent":
             job["run"] = result
+        elif job["kind"] == "avatar":
+            job["avatar"] = result
         else:
             job["scene_id"] = result["id"]
         job["status"] = "done"
@@ -284,8 +287,20 @@ async def apply_narration(scene_id: str, body: NarrationApply) -> dict:
 
 # ---------- Wish Scenes (Muse Image) ----------
 
+@app.post("/api/avatar")
+async def make_avatar(traits: avatar_pipeline.AvatarTraits, request: Request) -> dict:
+    """Illustrated avatar from described traits only (no photo), reused by every wish."""
+    public_demo.limit_model_work(request)
+    if not settings.has_api_key:
+        raise HTTPException(503, "Meta API key not configured")
+    job = _new_job("avatar")
+    asyncio.create_task(_run_job(job, avatar_pipeline.build_avatar(traits)))
+    return job
+
+
 class WishRequest(BaseModel):
     activity: str
+    avatar_id: str | None = None
     person_name: str | None = None
     language: str | None = None
 
@@ -301,7 +316,8 @@ async def make_wish(scene_id: str, body: WishRequest, request: Request) -> dict:
     job = _new_job("wish")
     asyncio.create_task(_run_job(job, wish_pipeline.build_wish_scene(
         place, body.activity.strip()[:80], person_name=(body.person_name or p["person_name"])[:24],
-        language=body.language or p["language"], progress=_progress(job), replace_source=replace_source)))
+        language=body.language or p["language"], progress=_progress(job), replace_source=replace_source,
+        avatar=avatar_pipeline.load_avatar(body.avatar_id))))
     return job
 
 

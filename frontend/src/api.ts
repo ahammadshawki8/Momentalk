@@ -1,3 +1,4 @@
+import type { AvatarTraits } from './components/Avatar'
 export type Point = [number, number]
 
 export interface Hotspot {
@@ -60,6 +61,7 @@ export interface Job {
   stages: JobStage[]
   scene_id: string | null
   run?: AgentRun
+  avatar?: { avatar_id: string; url: string; description: string }
   error: string | null
 }
 
@@ -142,7 +144,8 @@ export const api = {
     files.forEach((f) => form.append('photos', f))
     return request<InboxItem[]>('/api/inbox', { method: 'POST', body: form })
   },
-  makeWish: (sceneId: string, body: { activity: string; person_name: string; language: string }) =>
+  makeAvatar: (traits: AvatarTraits) => request<Job>('/api/avatar', json('POST', traits)),
+  makeWish: (sceneId: string, body: { activity: string; person_name: string; language: string; avatar_id?: string }) =>
     request<Job>(`/api/scenes/${sceneId}/wish`, json('POST', body)),
   runAgent: () => request<Job>('/api/agent/run', { method: 'POST' }),
   recordTap: (sceneId: string, hotspotId: string) =>

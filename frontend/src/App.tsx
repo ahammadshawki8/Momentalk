@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { api, type Health, type Job, type Prefs, type Scene } from './api'
+import type { AvatarTraits } from './components/Avatar'
 import { SettingsSheet } from './components/SettingsSheet'
 import { TabBar } from './components/TabBar'
 import { loadLocalPrefs, saveLocalPrefs, type LocalPrefs } from './localPrefs'
@@ -28,13 +29,41 @@ export default function App() {
   const PERSON_NAME = local.personName
   const LANGUAGE = local.language
 
-  const applyLocal = useCallback((next: LocalPrefs, shareWithServer: boolean) => {
-    setLocal(next)
-    saveLocalPrefs(next)
-    if (shareWithServer) {
-      void api.updatePrefs({ person_name: next.personName, language: next.language }).then(setPrefs).catch(() => undefined)
-    }
+  /** Functional update so a background avatar job never overwrites newer choices. */
+  const updateLocal = useCallback((fn: (prev: LocalPrefs) => LocalPrefs) => {
+    setLocal((prev) => {
+      const next = fn(prev)
+      saveLocalPrefs(next)
+      return next
+    })
   }, [])
+
+  const [avatarDrawing, setAvatarDrawing] = useState(false)
+  const avatarRequest = useRef('')
+
+  /** Muse Image draws the described avatar in the background while onboarding continues. */
+  const requestAvatar = useCallback(async (traits: AvatarTraits) => {
+    const key = JSON.stringify(traits)
+    updateLocal((p) => (JSON.stringify(p.avatar.traits) === key ? p : { ...p, avatar: { traits } }))
+    if (!health?.api_key || avatarRequest.current === key) return
+    avatarRequest.current = key
+    setAvatarDrawing(true)
+    try {
+      let next = await api.makeAvatar(traits)
+      while (next.status === 'running') {
+        await new Promise((r) => window.setTimeout(r, 1500))
+        next = await api.job(next.id)
+      }
+      const drawn = next.avatar
+      if (drawn && avatarRequest.current === key) {
+        updateLocal((p) => (JSON.stringify(p.avatar.traits) === key ? { ...p, avatar: { traits, id: drawn.avatar_id, url: drawn.url } } : p))
+      }
+    } catch {
+      /* the drawn avatar is optional: wishes fall back to a described child */
+    } finally {
+      if (avatarRequest.current === key) setAvatarDrawing(false)
+    }
+  }, [health, updateLocal])
 
   const refresh = useCallback(async () => {
     try {
@@ -121,8 +150,14 @@ export default function App() {
         <Onboarding
           initial={local}
           sample={sample}
+          avatarUrl={local.avatar.url}
+          avatarDrawing={avatarDrawing}
+          onAvatarRequested={(traits) => void requestAvatar(traits)}
           onDone={(next, choice) => {
-            applyLocal(next, shareWithServer)
+            updateLocal((p) => ({ ...next, avatar: JSON.stringify(p.avatar.traits) === JSON.stringify(next.avatar.traits) ? p.avatar : next.avatar }))
+            if (shareWithServer) {
+              void api.updatePrefs({ person_name: next.personName, language: next.language }).then(setPrefs).catch(() => undefined)
+            }
             navigate({ name: 'tab', tab: 'home' }, { replace: true })
             if (choice === 'snap') fileInput.current?.click()
           }}
@@ -150,6 +185,7 @@ export default function App() {
         onPlay={(s) => play(s.id)}
         onChanged={refresh}
         language={LANGUAGE}
+        avatarId={local.avatar.id}
         onBuildStarted={(started, photoUrl) => {
           setPendingPhoto(photoUrl)
           setPendingIsVideo(false)
@@ -186,13 +222,13 @@ export default function App() {
           health={health}
           onClose={() => setSettingsOpen(false)}
           onSaved={(nextLocal, nextPrefs) => {
-            applyLocal(nextLocal, false)
+            updateLocal((p) => ({ ...p, personName: nextLocal.personName, language: nextLocal.language }))
             if (nextPrefs) setPrefs(nextPrefs)
             void api.health().then(setHealth)
           }}
           onRestartOnboarding={() => {
             setSettingsOpen(false)
-            applyLocal({ ...local, onboarded: false }, false)
+            updateLocal((p) => ({ ...p, onboarded: false }))
           }}
         />
       )}

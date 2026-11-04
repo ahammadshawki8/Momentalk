@@ -245,6 +245,41 @@ body {
   animation: rise 520ms var(--ease-out) both;
 }
 
+/* Onboarding: steps slide in the direction of travel, their content rises in sequence. */
+.slide-next { animation: slide-next 460ms var(--ease-out) both; }
+.slide-prev { animation: slide-prev 460ms var(--ease-out) both; }
+
+@keyframes slide-next {
+  from { opacity: 0; transform: translateX(32px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes slide-prev {
+  from { opacity: 0; transform: translateX(-32px); }
+  to { opacity: 1; transform: none; }
+}
+
+.stagger > * { animation: rise 560ms var(--ease-out) both; }
+.stagger > *:nth-child(2) { animation-delay: 70ms; }
+.stagger > *:nth-child(3) { animation-delay: 140ms; }
+.stagger > *:nth-child(4) { animation-delay: 210ms; }
+.stagger > *:nth-child(5) { animation-delay: 280ms; }
+.stagger > *:nth-child(6) { animation-delay: 350ms; }
+
+.avatar-pop { animation: avatar-pop 520ms var(--ease-spring) both; }
+
+@keyframes avatar-pop {
+  from { transform: scale(0.88); }
+  to { transform: none; }
+}
+
+.ready-ring { animation: ready-ring 2.4s var(--ease-out) infinite; }
+
+@keyframes ready-ring {
+  from { transform: scale(1); opacity: 0.9; }
+  to { transform: scale(1.35); opacity: 0; }
+}
+
 /* Home mascot: a slow float and an occasional blink. */
 .mascot-body {
   animation: mascot-float 4.2s ease-in-out infinite;

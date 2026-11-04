@@ -3,14 +3,18 @@
  * own onboarding and name, without changing it for anyone else. Storage can be unavailable
  * (private windows), so every access is guarded and defaults always work.
  */
+import { DEFAULT_TRAITS, type AvatarTraits } from './components/Avatar'
+
 export interface LocalPrefs {
   onboarded: boolean
   personName: string
   language: string
+  /** Described look; id and url once Muse Image has drawn it. */
+  avatar: { traits: AvatarTraits; id?: string; url?: string }
 }
 
 const KEY = 'momentalk.prefs'
-const DEFAULTS: LocalPrefs = { onboarded: false, personName: 'Maya', language: 'en' }
+const DEFAULTS: LocalPrefs = { onboarded: false, personName: 'Maya', language: 'en', avatar: { traits: DEFAULT_TRAITS } }
 
 export function loadLocalPrefs(): LocalPrefs {
   try {

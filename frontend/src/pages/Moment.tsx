@@ -11,6 +11,7 @@ interface MomentProps {
   scene: Scene
   personName: string
   language: string
+  avatarId?: string
   reveal: boolean
   onBack: () => void
   onPlay: (scene: Scene) => void
@@ -19,7 +20,7 @@ interface MomentProps {
 }
 
 /** One moment: the outlined photo and its words, ready to adjust and share with the person. */
-export function Moment({ scene, personName, language, reveal, onBack, onPlay, onChanged, onBuildStarted }: MomentProps) {
+export function Moment({ scene, personName, language, avatarId, reveal, onBack, onPlay, onChanged, onBuildStarted }: MomentProps) {
   const color = useMomentColor(scene.media_url)
   const [selected, setSelected] = useState<string | null>(null)
   const [hovered, setHovered] = useState<string | null>(null)
@@ -118,7 +119,7 @@ export function Moment({ scene, personName, language, reveal, onBack, onPlay, on
 
           {!scene.placeholder && <Narrate scene={scene} onApplied={onChanged} />}
           {scene.kind !== 'wish' && (
-            <WishMaker scene={scene} personName={personName} language={language}
+            <WishMaker scene={scene} personName={personName} language={language} avatarId={avatarId}
                        onStarted={(job) => onBuildStarted(job, scene.media_url)} />
           )}
 
