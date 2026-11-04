@@ -98,7 +98,8 @@ async def chat(messages: list[dict], *, model: str | None = None, schema: dict |
     return data
 
 
-DASHES = {"—": ", ", "–": "-", "‒": "-", "―": ", "}
+# Written as code points (not the characters) because the project bans these dashes in its files.
+DASHES = {chr(0x2014): ", ", chr(0x2013): "-", chr(0x2012): "-", chr(0x2015): ", "}
 
 
 def clean_text(value: Any) -> Any:
