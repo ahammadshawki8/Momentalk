@@ -6668,6 +6668,12 @@
       "audio_url": "/media/audio/26e66b7b79a5be95f1402561.mp3"
     }
   ],
-  "updated_at": 1793782270.1405973,
-  "demo": true
+  "updated_at": 1793793736.8335063,
+  "demo": true,
+  "taps": [
+    {
+      "hotspot_id": "h_415840a5ac",
+      "t": 1793793736.8335044
+    }
+  ]
 }

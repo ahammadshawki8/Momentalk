@@ -858,6 +858,20 @@
       "audio_url": "/media/audio/4ec7be46d6dabf1dd6757ec5.mp3"
     }
   ],
-  "updated_at": 1793779615.1553717,
-  "demo": true
+  "updated_at": 1793793763.7581122,
+  "demo": true,
+  "taps": [
+    {
+      "hotspot_id": "h_d50befb601",
+      "t": 1793793760.639214
+    },
+    {
+      "hotspot_id": "h_e52b20bd22",
+      "t": 1793793762.2857866
+    },
+    {
+      "hotspot_id": "h_ed0d666240",
+      "t": 1793793763.758111
+    }
+  ]
 }

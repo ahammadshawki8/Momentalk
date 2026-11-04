@@ -98,7 +98,7 @@ async def describe(media_id: str) -> str:
     return meta_client.clean_text(data["choices"][0]["message"]["content"])
 
 
-async def run_moment_builder(person_name: str = "Maya", progress: Progress | None = None) -> dict[str, Any]:
+async def run_moment_builder(person_name: str = "Raya", progress: Progress | None = None) -> dict[str, Any]:
     async def report(stage: str, **info: Any) -> None:
         if progress:
             await progress(stage, info)

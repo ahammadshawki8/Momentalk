@@ -68,7 +68,9 @@ async def propose_from_narration(scene: dict[str, Any], audio: bytes, filename: 
                 f"Narration: \"{transcript}\"\n"
                 f"Current hotspots: {hotspots}\n"
                 "Propose changes ONLY where the narration clearly refers to a hotspot (for example a person's name). "
-                "Keep labels 1 to 3 words, phrases short and first person. Language code: " + scene.get("language", "en"))},
+                "Keep labels 1 to 3 words. The phrase is what the person who taps says, in their own voice, "
+                "to or about that thing: 'Hi Nana!', 'I love Biscuit!'. Never write it as if the thing itself "
+                "is talking (not 'I am Biscuit'). Keep it short. Language code: " + scene.get("language", "en"))},
             {"type": "image_url", "image_url": {"url": meta_client.image_data_url(
                 (store.scene_dir(scene["id"]) / ("photo.jpg" if scene["kind"] != "video" else "keyframe.jpg")).read_bytes())}},
         ]}],

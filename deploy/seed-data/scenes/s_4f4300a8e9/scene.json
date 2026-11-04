@@ -19,8 +19,8 @@
   "hotspots": [
     {
       "id": "h_6905b84bcb",
-      "label": "Maya",
-      "phrase": "It's me Maya!",
+      "label": "Raya",
+      "phrase": "It's me Raya!",
       "synonyms": [
         "maya",
         "kid",
@@ -174,7 +174,7 @@
       ],
       "confidence": 0.8865247964859009,
       "order": 0,
-      "audio_url": "/media/audio/4ae19c43fe14d0ae0c8dc8c4.mp3"
+      "audio_url": "/media/audio/66673a6b1e0c42e2e8faa92a.mp3"
     },
     {
       "id": "h_0c4aa2fd29",
@@ -1128,7 +1128,69 @@
       "audio_url": "/media/audio/0c917f1dc4d3e773bef83fbb.mp3"
     }
   ],
-  "updated_at": 1793792685.8008866,
+  "updated_at": 1793798633.311059,
   "wish_of": "s_c27c95c732",
-  "demo": true
+  "demo": true,
+  "taps": [
+    {
+      "hotspot_id": "h_6905b84bcb",
+      "t": 1793793722.8099954
+    },
+    {
+      "hotspot_id": "h_0c4aa2fd29",
+      "t": 1793793725.2859657
+    },
+    {
+      "hotspot_id": "h_cbd2efd5fe",
+      "t": 1793793727.3013475
+    },
+    {
+      "hotspot_id": "h_7fb3709db0",
+      "t": 1793793729.0614927
+    },
+    {
+      "hotspot_id": "h_0b6cf4ace4",
+      "t": 1793793730.477233
+    },
+    {
+      "hotspot_id": "h_b135ee4eb8",
+      "t": 1793793731.7084143
+    },
+    {
+      "hotspot_id": "h_7015b70587",
+      "t": 1793793732.8836918
+    },
+    {
+      "hotspot_id": "h_6905b84bcb",
+      "t": 1793794706.9593737
+    },
+    {
+      "hotspot_id": "h_0c4aa2fd29",
+      "t": 1793794707.4905019
+    },
+    {
+      "hotspot_id": "h_cbd2efd5fe",
+      "t": 1793794708.001247
+    },
+    {
+      "hotspot_id": "h_166fbb414b",
+      "t": 1793794708.441907
+    },
+    {
+      "hotspot_id": "h_b135ee4eb8",
+      "t": 1793794708.9625518
+    },
+    {
+      "hotspot_id": "h_7015b70587",
+      "t": 1793794709.569078
+    },
+    {
+      "hotspot_id": "h_0b6cf4ace4",
+      "t": 1793794710.0730538
+    },
+    {
+      "hotspot_id": "h_7fb3709db0",
+      "t": 1793794710.5409536
+    }
+  ]
 }

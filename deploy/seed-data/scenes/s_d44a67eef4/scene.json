@@ -541,6 +541,12 @@
       "audio_url": "/media/audio/17dc8dd9305671fca37cf6a3.mp3"
     }
   ],
-  "updated_at": 1793779837.64904,
-  "demo": true
+  "updated_at": 1793793747.4369066,
+  "demo": true,
+  "taps": [
+    {
+      "hotspot_id": "h_a888f60095",
+      "t": 1793793747.4369018
+    }
+  ]
 }

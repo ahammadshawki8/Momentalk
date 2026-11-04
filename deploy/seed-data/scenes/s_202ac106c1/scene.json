@@ -6,7 +6,7 @@
   "width": 1536,
   "height": 1024,
   "language": "en",
-  "status": "draft",
+  "status": "approved",
   "created_by": "agent",
   "created_at": 1793792613.1324334,
   "build_seconds": 24.4,
@@ -1857,9 +1857,31 @@
       "audio_url": "/media/audio/910cb5db561293a1315532ef.mp3"
     }
   ],
-  "updated_at": 1793792685.8125572,
-  "agent_note": "This sharp flat-lay of yellow toys Maya plays with, including cars, blocks, and a ukulele, gives her many fun choices to tap and discuss.",
+  "updated_at": 1793798633.3131967,
+  "agent_note": "This sharp flat-lay of yellow toys Raya plays with, including cars, blocks, and a ukulele, gives her many fun choices to tap and discuss.",
   "source_media": "m_demo_yellow_toys",
   "agent_run": "a_ae9fb06909",
-  "demo": true
+  "demo": true,
+  "taps": [
+    {
+      "hotspot_id": "h_4fca583a39",
+      "t": 1793794874.579335
+    },
+    {
+      "hotspot_id": "h_51f24a0871",
+      "t": 1793794875.4699166
+    },
+    {
+      "hotspot_id": "h_91d5422dc9",
+      "t": 1793794877.113837
+    },
+    {
+      "hotspot_id": "h_4812a7efd8",
+      "t": 1793794878.562544
+    },
+    {
+      "hotspot_id": "h_e9792bfa47",
+      "t": 1793794880.7616603
+    }
+  ]
 }

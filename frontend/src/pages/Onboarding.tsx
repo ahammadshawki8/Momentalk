@@ -54,7 +54,7 @@ export function Onboarding({ initial, sample, avatarUrl, avatarDrawing, onAvatar
     if (step === 'look') onAvatarRequested(traits)
     go(index + 1)
   }
-  const prefs = (): LocalPrefs => ({ onboarded: true, personName: name.trim() || 'Maya', language, avatar: { ...initial.avatar, traits } })
+  const prefs = (): LocalPrefs => ({ onboarded: true, personName: name.trim() || 'Raya', language, avatar: { ...initial.avatar, traits } })
   const finish = (choice: 'explore' | 'snap') => onDone(prefs(), choice)
 
   return (
@@ -106,7 +106,7 @@ export function Onboarding({ initial, sample, avatarUrl, avatarDrawing, onAvatar
                 onChange={(e) => setName(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && name.trim() && next()}
                 className="mt-2 w-full border-b-2 border-line bg-transparent pb-3 text-[length:var(--text-display)] font-bold outline-none transition focus:border-ink"
-                placeholder="Maya"
+                placeholder="Raya"
                 maxLength={24}
               />
             </label>

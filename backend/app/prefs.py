@@ -10,7 +10,7 @@ from .config import settings
 PATH = settings.data_dir / "prefs.json"
 
 DEFAULTS: dict[str, Any] = {
-    "person_name": "Maya",
+    "person_name": "Raya",
     "language": "en",
     "voice": None,
     "private_mode": False,

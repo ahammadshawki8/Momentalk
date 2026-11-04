@@ -16,6 +16,7 @@ from .. import meta_client, store
 from ..config import settings
 
 AVATAR_DIR = settings.data_dir / "avatars"
+SEED_PREFIX = "a_5eed"  # the sample profile's avatar, kept by profile resets
 
 SKIN = {"light": "light", "fair": "fair", "medium": "medium brown", "tan": "warm tan", "deep": "deep brown"}
 HAIR_COLOR = {"black": "black", "brown": "brown", "blond": "blond", "red": "red", "gray": "silver gray"}

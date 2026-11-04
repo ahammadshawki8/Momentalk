@@ -106,7 +106,9 @@ def reset_profile() -> dict:
         if not scene.get("demo"):
             store.delete_scene(scene["id"])
             removed += 1
-    shutil.rmtree(avatar_pipeline.AVATAR_DIR, ignore_errors=True)
+    for drawing in avatar_pipeline.AVATAR_DIR.glob("*"):
+        if drawing.is_file() and not drawing.name.startswith(avatar_pipeline.SEED_PREFIX):
+            drawing.unlink()
     for photo in agent.INBOX.glob("*"):
         if photo.is_file() and not photo.stem.startswith("m_demo"):
             photo.unlink()

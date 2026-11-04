@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { api, type Job, type Scene } from '../api'
 import { SparkIcon } from './Icons'
 
-/** "Imagine Maya here": Muse Image puts an illustrated avatar into this place, doing something they want. */
+/** "Imagine Raya here": Muse Image puts an illustrated avatar into this place, doing something they want. */
 export function WishMaker({ scene, personName, language, avatarId, onStarted }: {
   scene: Scene
   personName: string

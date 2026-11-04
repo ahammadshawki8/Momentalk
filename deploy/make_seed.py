@@ -36,6 +36,10 @@ def main() -> None:
     inbox.mkdir(parents=True, exist_ok=True)
     for photo in (DATA / "inbox").glob("m_demo_*.jpg"):
         shutil.copy(photo, inbox / photo.name)
+    avatars = SEED / "avatars"
+    avatars.mkdir(parents=True, exist_ok=True)
+    for drawing in (DATA / "avatars").glob("a_5eed*"):
+        shutil.copy(drawing, avatars / drawing.name)
     if (DATA / "prefs.json").exists():
         shutil.copy(DATA / "prefs.json", SEED / "prefs.json")
     print(f"seed ready: {len(audio_needed)} voice clips")

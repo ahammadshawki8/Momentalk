@@ -37,7 +37,7 @@ def bootstrap_data() -> None:
     if not any(scenes.glob("*/scene.json")):
         shutil.copytree(SEED_DIR, settings.data_dir, dirs_exist_ok=True)
     elif PUBLIC:
-        for part in ("scenes", "audio", "inbox"):
+        for part in ("scenes", "audio", "inbox", "avatars"):
             if (SEED_DIR / part).exists():
                 shutil.copytree(SEED_DIR / part, settings.data_dir / part, dirs_exist_ok=True)
 

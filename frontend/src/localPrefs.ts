@@ -14,7 +14,9 @@ export interface LocalPrefs {
 }
 
 const KEY = 'momentalk.prefs'
-const DEFAULTS: LocalPrefs = { onboarded: false, personName: 'Maya', language: 'en', avatar: { traits: DEFAULT_TRAITS } }
+// The sample profile ships with Raya's drawn avatar, so wishes use her even if onboarding is skipped.
+const SEED_AVATAR = { traits: { ...DEFAULT_TRAITS, hair_color: 'brown', hair_style: 'ponytail', outfit: 'green' }, id: 'a_5eed000001', url: '/media/avatars/a_5eed000001.png' }
+const DEFAULTS: LocalPrefs = { onboarded: false, personName: 'Raya', language: 'en', avatar: SEED_AVATAR }
 
 export function loadLocalPrefs(): LocalPrefs {
   try {
@@ -32,7 +34,7 @@ export function resetLocalPrefs(): LocalPrefs {
   } catch {
     /* storage blocked: nothing stored to remove */
   }
-  return { ...DEFAULTS, avatar: { traits: { ...DEFAULTS.avatar.traits } } }
+  return { ...DEFAULTS, avatar: { ...SEED_AVATAR, traits: { ...SEED_AVATAR.traits } } }
 }
 
 export function saveLocalPrefs(prefs: LocalPrefs): void {

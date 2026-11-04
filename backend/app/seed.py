@@ -18,10 +18,10 @@ PHOTOS = PROJECT_ROOT / "demo-assets" / "unsplash"
 
 # Newest first in the album: (file, title, caregiver narration that personalizes labels)
 DEMO = [
-    ("toys.jpg", "Toy box", "Maya's toy box. Her favorite is the sock monkey, she calls him Mr. Stripes."),
+    ("toys.jpg", "Toy box", "Raya's toy box. Her favorite is the sock monkey, she calls him Mr. Stripes."),
     ("park.jpg", "Park with Biscuit", "At the park. The black and white dog is our dog Biscuit, the white one is his friend Pip."),
     ("nana.jpg", "Nana", "This is Nana. She always gives a thumbs up."),
-    ("birthday.jpg", "Birthday", "Maya's birthday cake with candles."),
+    ("birthday.jpg", "Birthday", "Raya's birthday cake with candles."),
     ("breakfast.jpg", "Breakfast", "Pancakes for breakfast."),
 ]
 
@@ -50,7 +50,7 @@ async def seed_photos_only() -> None:
 
 async def seed_built() -> None:
     for file, title, narration in reversed(DEMO):  # oldest first so the album order matches DEMO
-        scene = await build_photo_scene((PHOTOS / file).read_bytes(), person_name="Maya", narration=narration)
+        scene = await build_photo_scene((PHOTOS / file).read_bytes(), person_name="Raya", narration=narration)
         scene.update({"title": title, "demo": True})
         store.save_scene(scene)
         print(f"built {scene['id']} '{title}': {len(scene['hotspots'])} hotspots in {scene['build_seconds']}s")
@@ -74,7 +74,7 @@ async def rebuild_one(file: str) -> None:
     for scene in store.list_scenes():
         if scene.get("demo") and scene["title"] == title:
             store.delete_scene(scene["id"])
-    scene = await build_photo_scene((PHOTOS / file).read_bytes(), person_name="Maya", narration=narration)
+    scene = await build_photo_scene((PHOTOS / file).read_bytes(), person_name="Raya", narration=narration)
     scene.update({"title": title, "demo": True})
     store.save_scene(scene)
     print(f"built '{title}': {[h['label'] for h in scene['hotspots']]} not found: {scene.get('not_found')}")

@@ -1,7 +1,7 @@
 {
   "id": "s_c27b8ed449",
   "kind": "photo",
-  "title": "Yellow Duck Toy",
+  "title": "Raya's Favorite Bath Toy",
   "media_url": "/media/scenes/s_c27b8ed449/photo.jpg",
   "width": 1536,
   "height": 1024,
@@ -21,12 +21,13 @@
   "hotspots": [
     {
       "id": "h_ef40040e01",
-      "label": "rubber duck",
-      "phrase": "Let's play ducks!",
+      "label": "Raya's duck",
+      "phrase": "I'm Raya's favorite!",
       "synonyms": [
         "duck",
         "ducky",
-        "bath toy"
+        "bath toy",
+        "raya's duck"
       ],
       "kind": "toy",
       "sam_phrase": "yellow rubber duck",
@@ -136,7 +137,7 @@
       ],
       "confidence": 0.96875,
       "order": 0,
-      "audio_url": "/media/audio/bf8f52b8ab435ee39e4364bc.mp3"
+      "audio_url": "/media/audio/76acfed80ff16c1667f57353.mp3"
     },
     {
       "id": "h_08ca316526",
@@ -323,10 +324,80 @@
       "confidence": 0.8324607610702515,
       "order": 2,
       "audio_url": "/media/audio/1f1b8c6c265bfaacbfcd9312.mp3"
+    },
+    {
+      "id": "h_b3b8f49033",
+      "label": "Rubber Duck",
+      "phrase": "I see a duck.",
+      "synonyms": [
+        "duck",
+        "ducky",
+        "toy duck"
+      ],
+      "kind": "object",
+      "sam_phrase": "point prompt",
+      "polygons": [
+        [
+          [
+            0.666,
+            0.0098
+          ],
+          [
+            0.0,
+            0.0029
+          ],
+          [
+            0.0,
+            0.666
+          ],
+          [
+            0.666,
+            0.6641
+          ]
+        ]
+      ],
+      "confidence": 0.9921875,
+      "order": 3,
+      "audio_url": "/media/audio/c785ab75dd722691f792159e.mp3"
+    },
+    {
+      "id": "h_4c49a7f49c",
+      "label": "Rubber Duck",
+      "phrase": "I am a rubber duck.",
+      "synonyms": [
+        "duck",
+        "ducky",
+        "toy"
+      ],
+      "kind": "object",
+      "sam_phrase": "point prompt",
+      "polygons": [
+        [
+          [
+            0.0,
+            0.0029
+          ],
+          [
+            0.0,
+            0.666
+          ],
+          [
+            0.666,
+            0.6621
+          ],
+          [
+            0.6641,
+            0.0059
+          ]
+        ]
+      ],
+      "confidence": 0.9921875,
+      "order": 4,
+      "audio_url": "/media/audio/859eb10f050d33d8c777976d.mp3"
     }
   ],
-  "updated_at": 1793792685.814027,
-  "agent_note": "This clear photo of Maya's yellow rubber duck toy is a playful object she can talk about and easily tap.",
+  "updated_at": 1793798633.3145242,
+  "agent_note": "This clear photo of Raya's yellow rubber duck toy is a playful object she can talk about and easily tap.",
   "source_media": "m_demo_duck",
   "agent_run": "a_ae9fb06909",
   "demo": true
