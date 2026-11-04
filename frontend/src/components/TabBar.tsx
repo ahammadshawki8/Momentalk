@@ -75,9 +75,9 @@ export function TabBar({ current, onTab, onSnap, todayBadge = 0 }: TabBarProps) 
           <button
             onClick={onSnap}
             aria-label="Snap a moment"
-            className="flex h-12 w-12 items-center justify-center rounded-full bg-ink text-white transition active:scale-90"
+            className="group -mt-8 flex h-16 w-16 items-center justify-center rounded-full bg-ink text-white shadow-[0_12px_28px_rgba(20,20,20,0.35)] ring-[5px] ring-canvas transition active:scale-90"
           >
-            <CameraIcon className="h-6 w-6" />
+            <CameraIcon className="h-7 w-7 transition-transform duration-500 group-hover:-rotate-12" />
           </button>
         </div>
         {ITEMS.slice(2).map(button)}

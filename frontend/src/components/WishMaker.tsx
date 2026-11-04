@@ -41,7 +41,6 @@ export function WishMaker({ scene, personName, onMade }: { scene: Scene; personN
     >
       <label className="block text-sm">
         <span className="block font-bold">Imagine {personName} here</span>
-        <span className="block text-muted">So {personName} can ask for it. Made with Muse Image as a drawing, never a real face.</span>
         <span className="mt-3 flex gap-2">
           <input
             value={activity}

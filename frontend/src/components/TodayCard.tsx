@@ -11,13 +11,13 @@ const STEP_TEXT: Record<string, (detail?: string) => string> = {
 }
 
 interface TodayCardProps {
-  personName: string
+  personName?: string
   apiReady: boolean
   onDraftsReady: () => Promise<void>
 }
 
 /** Moment Builder (Muse Wonder): turns today's photos into draft moments, with a visible trace. */
-export function TodayCard({ personName, apiReady, onDraftsReady }: TodayCardProps) {
+export function TodayCard({ apiReady, onDraftsReady }: TodayCardProps) {
   const [inbox, setInbox] = useState<InboxItem[]>([])
   const [job, setJob] = useState<Job | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -48,7 +48,6 @@ export function TodayCard({ personName, apiReady, onDraftsReady }: TodayCardProp
       <div className="rise mt-8 rounded-[24px] border border-line bg-white p-5">
         <span className="flex h-11 w-11 items-center justify-center rounded-full bg-canvas"><SparkIcon className="h-5 w-5" /></span>
         <h2 className="mt-4 text-[length:var(--text-title)] font-bold">Add today's photos</h2>
-        <p className="mt-1 leading-relaxed text-muted">Moment Builder picks the best ones for {personName} and makes drafts for you.</p>
         <FilePicker inputRef={input} onFiles={async (files) => setInbox(await api.addToInbox(files))} />
         <button onClick={() => input.current?.click()} className="mt-5 h-12 w-full rounded-full bg-canvas font-bold active:scale-[0.98]">Add photos</button>
       </div>
@@ -65,7 +64,6 @@ export function TodayCard({ personName, apiReady, onDraftsReady }: TodayCardProp
       <h2 className="mt-4 text-[length:var(--text-title)] font-bold">
         {running ? 'Moment Builder is working' : job?.status === 'done' ? 'Drafts are ready for your review' : `${inbox.length} photos from today`}
       </h2>
-      <p className="mt-1 leading-relaxed text-muted">Muse Wonder picks the moments and writes a note on which words to model.</p>
       {!running && job?.status !== 'done' && (
         <button
           disabled={!apiReady}

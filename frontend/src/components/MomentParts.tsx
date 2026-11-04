@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react'
+import { useState, type CSSProperties } from 'react'
 import type { Hotspot, Scene } from '../api'
 import { accentStyle, useMomentColor } from '../color'
 import { pop } from '../feedback'
@@ -21,10 +21,10 @@ export function LiveHero({ scene, onOpen }: { scene: Scene; onOpen: (s: Scene) =
       </div>
       <button onClick={() => onOpen(scene)} className="mt-4 flex w-full items-center justify-between gap-3 text-left active:opacity-70">
         <span className="min-w-0">
-          <span className="block truncate text-[length:var(--text-title)] font-bold">{scene.title}</span>
+          <span className="block text-[length:var(--text-title)] font-bold leading-snug">{scene.title}</span>
           <span className="mt-0.5 flex items-center gap-2 text-[length:var(--text-caption)] text-muted">
             <span className="h-2 w-2 rounded-full" style={{ background: 'var(--accent)' }} aria-hidden="true" />
-            {plural(scene.hotspots.length, 'word', 'words')}, tap the photo to hear them
+            {plural(scene.hotspots.length, 'word', 'words')}
           </span>
         </span>
         <span className="text-[length:var(--text-caption)] font-bold text-muted">Open</span>
@@ -33,16 +33,70 @@ export function LiveHero({ scene, onOpen }: { scene: Scene; onOpen: (s: Scene) =
   )
 }
 
+/** Say a word: its cached voice, or the device voice when there is no audio. */
+export function sayHotspot(hotspot: Hotspot) {
+  pop()
+  if (hotspot.audio_url) void new Audio(hotspot.audio_url).play().catch(() => undefined)
+  else if ('speechSynthesis' in window) window.speechSynthesis.speak(new SpeechSynthesisUtterance(hotspot.phrase))
+}
+
+const outlineOf = (h: Hotspot) => (h.polygons.length ? h.polygons : h.track?.length ? [h.track[0].poly] : [])
+
+/** Square crop around a hotspot, in image pixels, kept inside the photo when it fits. */
+function cropBox(polys: Hotspot['polygons'], w: number, h: number) {
+  const xs = polys.flat().map((p) => p[0] * w)
+  const ys = polys.flat().map((p) => p[1] * h)
+  const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys)
+  const side = Math.min(Math.min(w, h), Math.max((x1 - x0) * 1.3, (y1 - y0) * 1.3, Math.min(w, h) * 0.14))
+  const clamp = (c: number, size: number) => (side >= size ? size / 2 : Math.min(size - side / 2, Math.max(side / 2, c)))
+  const cx = clamp((x0 + x1) / 2, w)
+  const cy = clamp((y0 + y1) / 2, h)
+  return { x: cx - side / 2, y: cy - side / 2, side }
+}
+
+/** One word as a card: the object itself lifted out of its photo, its name below. */
+export function WordCard({ hotspot, scene }: { hotspot: Hotspot; scene: Scene }) {
+  const [said, setSaid] = useState(0)
+  const polys = outlineOf(hotspot)
+  const W = scene.width
+  const H = scene.height
+  const box = polys.length ? cropBox(polys, W, H) : { x: 0, y: 0, side: Math.min(W, H) }
+  const clipId = `word-${scene.id}-${hotspot.id}`
+  const points = (poly: Hotspot['polygons'][number]) => poly.map(([x, y]) => `${x * W},${y * H}`).join(' ')
+
+  return (
+    <button
+      key={said}
+      onClick={() => {
+        sayHotspot(hotspot)
+        setSaid((n) => n + 1)
+      }}
+      className={`flex flex-col overflow-hidden rounded-[20px] border border-line bg-white text-left active:scale-95 ${said ? 'word-said' : ''}`}
+      aria-label={`${hotspot.label}. Says ${hotspot.phrase}`}
+    >
+      <svg viewBox={`${box.x} ${box.y} ${box.side} ${box.side}`} className="block aspect-square w-full" aria-hidden="true">
+        <defs>
+          <clipPath id={clipId}>{polys.map((p, i) => <polygon key={i} points={points(p)} />)}</clipPath>
+        </defs>
+        <image href={scene.media_url} width={W} height={H} preserveAspectRatio="none" />
+        <rect x={box.x} y={box.y} width={box.side} height={box.side} fill="#ffffff" opacity={polys.length ? 0.72 : 0} />
+        {polys.length > 0 && (
+          <g style={{ filter: 'drop-shadow(0 3px 6px rgba(20,20,20,0.28))' }}>
+            <image href={scene.media_url} width={W} height={H} preserveAspectRatio="none" clipPath={`url(#${clipId})`} />
+          </g>
+        )}
+      </svg>
+      <span className="px-3 pb-3 pt-1 text-center font-bold leading-tight [overflow-wrap:anywhere]">{hotspot.label.charAt(0).toUpperCase() + hotspot.label.slice(1)}</span>
+    </button>
+  )
+}
+
 /** A word from one moment, as a calm pill with the moment's color as a small dot. Tap to hear it. */
 export function WordChip({ hotspot, scene }: { hotspot: Hotspot; scene: Scene }) {
   const color = useMomentColor(scene.media_url)
   return (
     <button
-      onClick={() => {
-        pop()
-        if (hotspot.audio_url) void new Audio(hotspot.audio_url).play().catch(() => undefined)
-        else if ('speechSynthesis' in window) window.speechSynthesis.speak(new SpeechSynthesisUtterance(hotspot.phrase))
-      }}
+      onClick={() => sayHotspot(hotspot)}
       style={accentStyle(color)}
       className="flex h-11 shrink-0 items-center gap-2 rounded-full border border-line bg-white px-4 font-bold transition active:scale-95 active:bg-canvas"
       aria-label={`${hotspot.label}. Says ${hotspot.phrase}`}
@@ -78,7 +132,7 @@ export function MomentTile({ scene, onOpen }: { scene: Scene; onOpen: (s: Scene)
           <span className="absolute right-2.5 top-2.5 rounded-full bg-white px-2.5 py-1 text-[length:var(--text-caption)] font-bold">Draft</span>
         )}
       </span>
-      <span className="mt-2.5 block truncate font-bold">{scene.kind === 'wish' ? scene.title.replace(/^Wish:\s*/i, '') : scene.title}</span>
+      <span className="mt-2.5 line-clamp-2 font-bold leading-snug">{scene.kind === 'wish' ? scene.title.replace(/^Wish:\s*/i, '') : scene.title}</span>
       <span className="mt-0.5 flex items-center gap-1.5 text-[length:var(--text-caption)] text-muted">
         <span className="h-1.5 w-1.5 rounded-full" style={{ background: 'var(--accent)' }} aria-hidden="true" />
         {scene.hotspots.length === 0 ? 'Ready to outline' : plural(scene.hotspots.length, 'word', 'words')}

@@ -101,9 +101,7 @@ export function Narrate({ scene, onApplied }: { scene: Scene; onApplied: () => P
             <span className="block font-bold">
               {state.name === 'recording' ? 'Listening. Tap to finish.' : state.name === 'thinking' ? 'Finding your words...' : 'Describe it in your words'}
             </span>
-            <span className="block text-muted">
-              {state.name === 'error' ? state.message : '"This is Nana, she makes pancakes." Names become words.'}
-            </span>
+            {state.name === 'error' && <span className="block text-muted">{state.message}</span>}
           </span>
         </div>
       )}

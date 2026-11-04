@@ -245,6 +245,58 @@ body {
   animation: rise 520ms var(--ease-out) both;
 }
 
+/* Home mascot: a slow float and an occasional blink. */
+.mascot-body {
+  animation: mascot-float 4.2s ease-in-out infinite;
+}
+
+.mascot-shadow {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: mascot-shadow 4.2s ease-in-out infinite;
+}
+
+.mascot-eyes {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: blink 5s infinite;
+}
+
+@keyframes mascot-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes mascot-shadow {
+  0%, 100% { transform: scaleX(1); opacity: 0.08; }
+  50% { transform: scaleX(0.82); opacity: 0.05; }
+}
+
+@keyframes blink {
+  0%, 46%, 50%, 100% { transform: scaleY(1); }
+  48% { transform: scaleY(0.1); }
+}
+
+.float-photo {
+  animation: float-photo 6s ease-in-out infinite;
+}
+
+@keyframes float-photo {
+  0%, 100% { translate: 0 0; }
+  50% { translate: 0 -8px; }
+}
+
+/* Words: a tapped card says its word with a quick ring. */
+.word-said {
+  animation: word-said 900ms var(--ease-out);
+}
+
+@keyframes word-said {
+  0% { box-shadow: 0 0 0 0 var(--color-ink); transform: scale(0.96); }
+  30% { transform: scale(1.02); }
+  100% { box-shadow: 0 0 0 10px transparent; transform: none; }
+}
+
 @keyframes rise {
   from { opacity: 0; transform: translateY(14px); }
   to { opacity: 1; transform: none; }

@@ -168,8 +168,7 @@ export default function App() {
     <>
       {picker}
       {tab === 'home' && (
-        <HomePage {...common} health={health} onPlay={() => play()} onSettings={() => setSettingsOpen(true)}
-                  onToday={() => goTab('today')} onSeeAll={() => goTab('moments')} />
+        <HomePage {...common} health={health} onPlay={() => play()} onSettings={() => setSettingsOpen(true)} onSeeAll={() => goTab('moments')} />
       )}
       {tab === 'moments' && <MomentsPage {...common} />}
       {tab === 'words' && <WordsPage {...common} />}

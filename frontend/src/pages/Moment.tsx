@@ -70,19 +70,13 @@ export function Moment({ scene, personName, reveal, onBack, onPlay, onChanged, o
               className="relative shadow-[0_20px_50px_rgba(21,23,26,0.18)]"
             />
           </div>
-          <p className="mt-3 px-4 text-sm text-muted sm:px-0">
-            {note ??
-              (scene.hotspots.length === 0
-                ? 'Not outlined yet. Connect the Meta API key and SAM 3.1 will outline everything in this photo.'
-                : 'Missed something? Tap it on the photo to add it.')}
-          </p>
+          {note && <p className="mt-3 px-4 text-sm text-muted sm:px-0">{note}</p>}
         </div>
 
         <aside className="rise px-4 sm:px-0">
-          <h1 className="text-3xl font-bold tracking-tight">{scene.title}</h1>
+          <h1 className="text-[length:var(--text-display)] font-bold leading-[1.1] tracking-[-0.02em] text-balance">{scene.title}</h1>
           <p className="mt-1 text-muted">
             {scene.hotspots.length} {scene.hotspots.length === 1 ? 'word' : 'words'}
-            {scene.kind === 'video' ? (scene.hotspots.length === 1 ? ' that follows along' : ' that follow along') : ''}
             {scene.build_seconds ? `, made in ${scene.build_seconds} seconds` : ''}
           </p>
 
@@ -176,7 +170,7 @@ function WordRow({ hotspot, open, lit, onHover, onToggle, onSave, onRemove }: {
         <span className={`h-3 w-3 shrink-0 rounded-full transition-transform duration-300 ${lit ? 'scale-150' : ''}`} style={{ background: 'var(--accent)' }} aria-hidden="true" />
         <span className="min-w-0 flex-1">
           <span className="block text-lg font-bold">{hotspot.label}</span>
-          <span className="block truncate text-muted">{hotspot.phrase}</span>
+          <span className="block text-muted">{hotspot.phrase}</span>
         </span>
         {hotspot.audio_url && (
           <span

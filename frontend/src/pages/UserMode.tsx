@@ -96,7 +96,7 @@ export function UserMode({ scenes, initialSceneId, personName, onExit }: UserMod
             onExit()
           }}
         />
-        <span className="min-w-0 truncate font-toy text-lg font-extrabold text-white/90">{current.title}</span>
+        <span className="line-clamp-2 min-w-0 font-toy text-lg font-extrabold leading-tight text-white/90">{current.title}</span>
         <span className="w-11" aria-hidden="true" />
       </header>
 
