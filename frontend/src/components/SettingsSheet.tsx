@@ -25,16 +25,14 @@ const Chevron = () => (
   </svg>
 )
 
-/** Compact bottom sheet: profile, privacy, and a guarded delete. Languages open in their own view. */
+/** Compact bottom sheet: profile and a guarded delete. Languages open in their own view. */
 export function SettingsSheet({ local, prefs, health, onClose, onSaved, onDeleteProfile }: SettingsSheetProps) {
   const [name, setName] = useState(local.personName)
   const [language, setLanguage] = useState(local.language)
-  const [privateMode, setPrivateMode] = useState(!!prefs?.private_mode)
   const [error, setError] = useState<string | null>(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [view, setView] = useState<'main' | 'language'>('main')
-  const openAvailable = !!health?.open_weights_available
   const shared = !health?.public
   const current = LANGUAGES.find((l) => l.code === language) ?? LANGUAGES[0]
 
@@ -44,7 +42,7 @@ export function SettingsSheet({ local, prefs, health, onClose, onSaved, onDelete
     let nextPrefs = prefs
     try {
       if (shared && prefs) {
-        nextPrefs = await api.updatePrefs({ person_name: nextLocal.personName, language, private_mode: privateMode })
+        nextPrefs = await api.updatePrefs({ person_name: nextLocal.personName, language })
       }
       onSaved(nextLocal, nextPrefs)
       onClose()
@@ -126,27 +124,6 @@ export function SettingsSheet({ local, prefs, health, onClose, onSaved, onDelete
               </button>
             </div>
 
-            {/* Private Mode appears only when an open weights partner key is configured. */}
-            {openAvailable && shared && (<>
-            <p className={`${groupLabel} mt-6`}>Privacy</p>
-            <div className="flex items-center justify-between gap-4 rounded-[16px] bg-white px-4 py-3">
-              <span className="min-w-0">
-                <span className="block font-bold">Private Mode</span>
-                <span className="block text-[length:var(--text-caption)] text-muted">
-                  Muse Spark Open on partner inference
-                </span>
-              </span>
-              <button
-                role="switch"
-                aria-checked={privateMode}
-                aria-label="Private Mode"
-                                onClick={() => setPrivateMode(!privateMode)}
-                className={`relative h-8 w-[52px] shrink-0 rounded-full transition disabled:opacity-40 ${privateMode ? 'bg-ink' : 'bg-line'}`}
-              >
-                <span className={`absolute top-1 h-6 w-6 rounded-full bg-white shadow transition-all ${privateMode ? 'left-[24px]' : 'left-1'}`} />
-              </button>
-            </div>
-            </>)}
 
             <div className="mt-6">
               {confirmDelete ? (

@@ -25,7 +25,6 @@ Momentalk is a communication tool. It does not diagnose, treat, or give medical 
 | **Muse Voice Transcribe** | Live Modeling: when a parent talks, the words they say light up on the board in real time (aided language modeling, the strongest evidence based teaching strategy in this field). Also turns a caregiver's spoken description into personal labels ("This is Nana"). |
 | **Muse Wonder** | Moment Builder agent: reviews the day's photos, proposes new scenes, and suggests words to model. Nothing reaches the person until a caregiver approves it. |
 | **Muse Image** | Wish Scenes: places and activities that are not in front of the person, so they can ask for them. |
-| **Muse Spark Open** | Private Mode: language work runs on open weights through partner inference. |
 
 Text to speech uses free edge-tts voices, because Meta does not offer a text to speech model.
 

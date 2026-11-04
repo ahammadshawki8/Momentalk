@@ -69,8 +69,7 @@ export interface Health {
   ok: boolean
   public?: boolean
   api_key: boolean
-  open_weights_available: boolean
-  language_model: { id: string; name: string; open_weights: string }
+  language_model: { id: string; name: string }
   cost: { cap_usd: number; total_usd: number }
 }
 
@@ -78,7 +77,6 @@ export interface Prefs {
   person_name: string
   language: string
   voice: string | null
-  private_mode: boolean
 }
 
 export interface InboxItem {

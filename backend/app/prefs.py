@@ -1,4 +1,4 @@
-"""Caregiver preferences that persist on this device (person profile, Private Mode)."""
+"""Caregiver preferences that persist on this device (person profile)."""
 
 from __future__ import annotations
 
@@ -13,13 +13,13 @@ DEFAULTS: dict[str, Any] = {
     "person_name": "Raya",
     "language": "en",
     "voice": None,
-    "private_mode": False,
 }
 
 
 def load() -> dict[str, Any]:
     if PATH.exists():
-        return {**DEFAULTS, **json.loads(PATH.read_text(encoding="utf-8"))}
+        stored = json.loads(PATH.read_text(encoding="utf-8"))
+        return {**DEFAULTS, **{k: v for k, v in stored.items() if k in DEFAULTS}}  # ignore retired keys
     return dict(DEFAULTS)
 
 

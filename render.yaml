@@ -12,7 +12,5 @@ services:
     envVars:
       - key: MODEL_API_KEY
         sync: false
-      - key: OPEN_WEIGHTS_API_KEY
-        sync: false
       - key: DATABASE_URL
         sync: false
