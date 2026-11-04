@@ -116,7 +116,7 @@ export function UserMode({ scenes, initialSceneId, personName, onExit }: UserMod
             />
           </FitBox>
           {listening && live.caption && (
-            <p className="pointer-events-none absolute inset-x-0 bottom-3 mx-auto w-fit max-w-[85%] rounded-2xl bg-black/65 px-4 py-2 text-center text-lg text-white backdrop-blur" aria-live="polite">
+            <p className="pointer-events-none absolute inset-x-0 top-3 mx-auto w-fit max-w-[85%] rounded-2xl bg-black/65 px-4 py-2 text-center text-base text-white backdrop-blur sm:text-lg" aria-live="polite">
               {live.caption}
             </p>
           )}
@@ -125,16 +125,19 @@ export function UserMode({ scenes, initialSceneId, personName, onExit }: UserMod
         {/* Big word buttons: the same things as the outlines, easy to hit on a small screen. */}
         {words.length > 0 && (
           <div className="grid min-h-0 shrink-0 grid-cols-2 content-start gap-2.5 overflow-y-auto px-3 portrait:flex-1 landscape:w-64 landscape:grid-cols-1 landscape:content-center sm:grid-cols-3 sm:px-0">
-            {words.map((h) => (
+            {words.map((h) => {
+              const pulse = live.heard.find((p) => p.hotspotId === h.id)
+              return (
               <button
-                key={h.id}
+                key={pulse ? `${h.id}-${pulse.key}` : h.id}
                 onClick={() => setSpeakRequest({ hotspotId: h.id, key: ++speakKey.current })}
-                className="press flex min-h-14 items-center justify-center rounded-2xl bg-white px-3 py-2 text-center font-toy text-xl font-extrabold text-ink"
+                className={`press flex min-h-14 items-center justify-center rounded-2xl bg-white px-3 py-2 text-center font-toy text-xl font-extrabold text-ink ${pulse ? 'word-heard' : ''}`}
                 style={{ '--press-shadow': 'color-mix(in srgb, var(--accent) 70%, #000)' } as CSSProperties}
               >
                 {h.label}
               </button>
-            ))}
+              )
+            })}
           </div>
         )}
       </main>

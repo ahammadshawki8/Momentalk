@@ -248,6 +248,24 @@ export function SceneCanvas({
           )
         })}
 
+      {/* Live Modeling: the heard word pops up as a big chip over its outline. */}
+      {heard.map((pulse) => {
+        const h = scene.hotspots.find((x) => x.id === pulse.hotspotId)
+        const current = h && polygonsAt(h, now)[0]
+        if (!h || !current) return null
+        const [x, y] = topCenter(current)
+        return (
+          <div
+            key={`heard-${pulse.key}`}
+            className="heard-chip pointer-events-none absolute flex items-center gap-2 whitespace-nowrap rounded-full px-4 py-2 font-toy text-xl font-extrabold shadow-[0_10px_30px_rgba(0,0,0,0.35)] sm:text-3xl"
+            style={{ left: `${x * 100}%`, top: `${y * 100}%`, background: 'var(--accent)', color: 'var(--accent-ink)' }}
+          >
+            <span className="h-2.5 w-2.5 rounded-full bg-current" aria-hidden="true" />
+            {h.label}
+          </div>
+        )
+      })}
+
       {stickers.map((s) => (
         <div
           key={s.key}

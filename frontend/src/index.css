@@ -122,13 +122,49 @@ body {
   filter: drop-shadow(0 0 10px var(--accent));
 }
 
+/* Live Modeling: a heard word glows and breathes twice, unmistakable from across the room. */
+.hotspot.is-heard {
+  animation: heard-scale 2.6s var(--ease-out) 1;
+}
+
 .hotspot.is-heard .hotspot-shape {
-  animation: heard 1.5s var(--ease-out) 1;
+  animation: heard 2.6s var(--ease-out) 1;
 }
 
 @keyframes heard {
-  0% { fill: color-mix(in srgb, var(--accent) 60%, transparent); stroke: var(--accent); filter: drop-shadow(0 0 16px var(--accent)); }
+  0%, 30%, 60% { fill: color-mix(in srgb, var(--accent) 55%, transparent); stroke: var(--accent); stroke-width: 3; filter: drop-shadow(0 0 22px var(--accent)) drop-shadow(0 0 6px #fff); }
+  15%, 45% { fill: color-mix(in srgb, var(--accent) 25%, transparent); stroke: #ffffff; filter: drop-shadow(0 0 10px var(--accent)); }
   100% { fill: rgba(255, 255, 255, 0); stroke: #ffffff; }
+}
+
+@keyframes heard-scale {
+  0% { transform: scale(1); }
+  12% { transform: scale(1.06); }
+  30% { transform: scale(1); }
+  42% { transform: scale(1.05); }
+  60%, 100% { transform: scale(1); }
+}
+
+.heard-chip {
+  animation: heard-chip 2.6s var(--ease-spring) forwards;
+}
+
+@keyframes heard-chip {
+  0% { opacity: 0; transform: translate(-50%, -60%) scale(0.5); }
+  10% { opacity: 1; transform: translate(-50%, -112%) scale(1.08); }
+  20% { transform: translate(-50%, -108%) scale(1); }
+  80% { opacity: 1; transform: translate(-50%, -110%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -118%) scale(0.95); }
+}
+
+.word-heard {
+  animation: word-heard 2.6s var(--ease-out) 1;
+}
+
+@keyframes word-heard {
+  0%, 30%, 60% { background: var(--accent); transform: translateY(-3px) scale(1.04); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 45%, transparent), 0 6px 0 var(--press-shadow, #000); }
+  15%, 45% { background: #ffffff; transform: none; }
+  100% { background: #ffffff; transform: none; }
 }
 
 /* The reveal: outlines draw themselves around each thing, one after another. */

@@ -42,6 +42,8 @@ export function useLiveModeling(sceneId: string | null) {
       } else if (data.type === 'heard') {
         const pulses = (data.hotspot_ids as string[]).map((hotspotId) => ({ hotspotId, key: ++pulseKey.current }))
         setHeard((prev) => [...prev.filter((p) => !pulses.some((n) => n.hotspotId === p.hotspotId)), ...pulses])
+        // Clear after the animation so a chip does not reappear on re-render.
+        window.setTimeout(() => setHeard((prev) => prev.filter((p) => !pulses.some((n) => n.key === p.key))), 2700)
       } else if (data.type === 'error') {
         setMessage(data.message)
         setState('error')
@@ -74,6 +76,16 @@ export function useLiveModeling(sceneId: string | null) {
   }, [])
 
   useEffect(() => stop, [sceneId, stop])
+
+  // Dev only: lets automated checks send a typed phrase through the real live pipeline.
+  useEffect(() => {
+    if (!import.meta.env.DEV) return
+    const w = window as unknown as { __momentalkSay?: (t: string) => void }
+    w.__momentalkSay = say
+    return () => {
+      delete w.__momentalkSay
+    }
+  }, [say])
 
   return { state, caption, heard, message, start, stop, say }
 }
