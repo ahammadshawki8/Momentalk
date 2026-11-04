@@ -52,6 +52,7 @@ html {
 /* The person's view behaves like an app, not a web page. */
 .app-surface {
   height: 100dvh;
+  overflow-x: clip; /* slide in animations never cause a sideways scroll */
   overscroll-behavior: none;
   -webkit-user-select: none;
   user-select: none;
