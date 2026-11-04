@@ -12,7 +12,7 @@ const CREDIT = 'Built with Meta SAM 3.1, Muse Spark, Muse Voice Transcribe and M
  * outlines shown are genuine SAM 3.1 output. Open /?poster=4x3 or /?poster=16x9.
  */
 export function Poster({ scenes, format }: { scenes: Scene[]; format: '4x3' | '16x9' }) {
-  const hero = scenes.find((s) => s.id === 's_demo_toys') ?? scenes[0]
+  const hero = scenes.find((s) => s.title === 'Toy box') ?? scenes[0]
   const others = scenes.filter((s) => s.id !== hero?.id).slice(0, 3)
   const color = useMomentColor(hero?.media_url)
   const wide = format === '16x9'
