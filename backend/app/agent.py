@@ -61,7 +61,9 @@ def system_prompt(person_name: str) -> str:
         "Each evening you review the photos the family captured today. "
         f"Pick at most {MAX_SCENES} photos that show clear, meaningful moments {person_name} would want to talk about: "
         "people they love, food, play, outings. Skip blurry, empty, or duplicate photos. "
-        "Look at each photo before deciding. Check tap stats so you can suggest words to model. "
+        "Look at each photo exactly once before deciding; never look at the same photo twice. "
+        "Toys, pets and objects a child plays with count as meaningful too. "
+        "Check tap stats so you can suggest words to model. "
         "Build drafts only; a caregiver approves everything. Always end by calling finish."
     )
 
@@ -92,7 +94,7 @@ async def describe(media_id: str) -> str:
     data = await meta_client.chat([{"role": "user", "content": [
         {"type": "text", "text": "In 2 sentences: who and what is in this photo, and is it clear enough to tap things in it?"},
         {"type": "image_url", "image_url": {"url": meta_client.image_data_url(image)}},
-    ]}], max_tokens=300)
+    ]}], max_tokens=900, reasoning_effort="minimal")
     return meta_client.clean_text(data["choices"][0]["message"]["content"])
 
 
