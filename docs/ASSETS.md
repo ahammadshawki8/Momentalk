@@ -24,6 +24,8 @@ Selection rule: everyday moments with several distinct things to tap, and no ide
 | File | Use | Source | Creator | License |
 |---|---|---|---|---|
 | `park_dog.mp4` | Talking video scene "Fetch with Biscuit" | https://www.pexels.com/video/playful-dog-chasing-ball-in-lush-park-38356489/ | Yesim G. Ozdemir | Pexels License |
+| `kitten_yarn.mp4` | Talking video scene "Mochi and the yarn" | https://www.pexels.com/video/kitten-playing-ball-of-wool-16276559/ | Creator as listed on the Pexels page | Pexels License |
+| `grandpa_saz.mp4` | Talking video scene "Grandpa's music" | https://www.pexels.com/video/elderly-man-playing-on-guitar-10943544/ | Creator as listed on the Pexels page | Pexels License |
 
 ## Generated images (Muse Image)
 
