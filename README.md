@@ -1,5 +1,7 @@
 # Momentalk
 
+**Live app: [momentalk.onrender.com](https://momentalk.onrender.com)** (open it on a phone, or in a desktop browser at phone size)
+
 **Every moment has a story.** Momentalk turns everyday photos into a voice for those who cannot rely on speech, making the world around them easier to express.
 
 <p>

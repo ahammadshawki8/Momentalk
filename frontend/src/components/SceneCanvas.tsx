@@ -312,7 +312,7 @@ export function SceneCanvas({
       {stickers.map((s) => (
         <div
           key={s.key}
-          className="sticker pointer-events-none absolute max-w-[92%] overflow-hidden text-ellipsis whitespace-nowrap rounded-2xl px-4 py-2 text-xl font-extrabold sm:text-3xl"
+          className="sticker pointer-events-none absolute w-max max-w-[86%] rounded-2xl px-4 py-2 text-center text-xl font-extrabold leading-tight sm:text-3xl"
           style={{ left: `${s.x * 100}%`, top: `${s.y * 100}%` }}
           ref={keepInside}
         >
