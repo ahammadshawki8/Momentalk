@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { api, type Hotspot, type Job, type Scene } from '../api'
 import { accentStyle, useMomentColor } from '../color'
-import { BackIcon, CheckIcon, PlayIcon } from '../components/Icons'
+import { ConfirmButton } from '../components/ConfirmButton'
+import { BackIcon, CheckIcon, PlayIcon, TrashIcon } from '../components/Icons'
+import { errorText, toast } from '../toast'
 import { Narrate } from '../components/Narrate'
 import { WishMaker } from '../components/WishMaker'
 import { SceneCanvas } from '../components/SceneCanvas'
@@ -105,14 +107,19 @@ export function Moment({ scene, personName, language, avatarId, reveal, onBack, 
                 onHover={(on) => setHovered(on ? h.id : null)}
                 onToggle={() => setSelected((s) => (s === h.id ? null : h.id))}
                 onSave={async (patch) => {
-                  await api.updateHotspot(scene.id, h.id, patch)
-                  await onChanged()
+                  try {
+                    await api.updateHotspot(scene.id, h.id, patch)
+                    await onChanged()
+                  } catch (e) {
+                    toast(errorText(e))
+                  }
                 }}
                 onRemove={async () => {
                   await api.deleteHotspot(scene.id, h.id)
                   setSelected(null)
                   await onChanged()
                 }}
+                hasAudio={!!h.audio_url}
               />
             ))}
           </ul>
@@ -123,6 +130,22 @@ export function Moment({ scene, personName, language, avatarId, reveal, onBack, 
                        onStarted={(job) => onBuildStarted(job, scene.media_url)} />
           )}
 
+          {scene.status === 'approved' && (
+            <ConfirmButton
+              label="Delete this moment"
+              confirmLabel="Tap again to delete for good"
+              onConfirm={async () => {
+                await api.deleteScene(scene.id)
+                onBack()
+                await onChanged()
+              }}
+              className="mt-8 flex h-12 w-full items-center justify-center gap-2 rounded-[16px] border border-line bg-white font-bold text-danger"
+              armedClassName="mt-8 flex h-12 w-full items-center justify-center gap-2 rounded-[16px] bg-danger font-bold text-white"
+            >
+              <TrashIcon /> Delete this moment
+            </ConfirmButton>
+          )}
+
         </aside>
       </div>
 
@@ -130,15 +153,34 @@ export function Moment({ scene, personName, language, avatarId, reveal, onBack, 
       <div className="fixed inset-x-0 bottom-0 z-30 bg-gradient-to-t from-canvas via-canvas/90 to-transparent pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-6">
         <div className="mx-auto max-w-md px-4">
           {scene.status === 'draft' ? (
-            <button
-              onClick={async () => {
-                await api.approve(scene.id)
-                await onChanged()
-              }}
-              className="flex h-14 w-full items-center justify-center gap-2 rounded-full bg-ink text-lg font-bold text-white shadow-[0_10px_28px_rgba(21,23,26,0.35)] active:scale-[0.98]"
-            >
-              <CheckIcon /> Approve for {personName}
-            </button>
+            <div className="flex gap-2">
+              <ConfirmButton
+                label="Reject this draft"
+                confirmLabel="Reject?"
+                onConfirm={async () => {
+                  await api.rejectScene(scene.id)
+                  onBack()
+                  await onChanged()
+                }}
+                className="h-14 shrink-0 rounded-full border border-line bg-white px-6 text-lg font-bold text-danger"
+                armedClassName="h-14 shrink-0 rounded-full bg-danger px-6 text-lg font-bold text-white"
+              >
+                Reject
+              </ConfirmButton>
+              <button
+                onClick={async () => {
+                  try {
+                    await api.approve(scene.id)
+                    await onChanged()
+                  } catch (e) {
+                    toast(errorText(e))
+                  }
+                }}
+                className="flex h-14 flex-1 items-center justify-center gap-2 rounded-full bg-ink text-lg font-bold text-white shadow-[0_10px_28px_rgba(21,23,26,0.35)] active:scale-[0.98]"
+              >
+                <CheckIcon /> Approve for {personName}
+              </button>
+            </div>
           ) : (
             <OpenForButton personName={personName} onClick={() => onPlay(scene)} />
           )}
@@ -148,8 +190,9 @@ export function Moment({ scene, personName, language, avatarId, reveal, onBack, 
   )
 }
 
-function WordRow({ hotspot, open, lit, onHover, onToggle, onSave, onRemove }: {
+function WordRow({ hotspot, open, lit, onHover, onToggle, onSave, onRemove, hasAudio }: {
   hotspot: Hotspot
+  hasAudio: boolean
   open: boolean
   lit: boolean
   onHover: (on: boolean) => void
@@ -162,11 +205,11 @@ function WordRow({ hotspot, open, lit, onHover, onToggle, onSave, onRemove }: {
   const changed = label !== hotspot.label || phrase !== hotspot.phrase
 
   return (
-    <li onPointerEnter={() => onHover(true)} onPointerLeave={() => onHover(false)}>
+    <li className="relative" onPointerEnter={() => onHover(true)} onPointerLeave={() => onHover(false)}>
       <button onClick={onToggle} onFocus={() => onHover(true)} onBlur={() => onHover(false)}
               className="group flex min-h-14 w-full items-center gap-3 py-3 text-left active:bg-white/60" aria-expanded={open}>
         <span className={`h-3 w-3 shrink-0 rounded-full transition-transform duration-300 ${lit ? 'scale-150' : ''}`} style={{ background: 'var(--accent)' }} aria-hidden="true" />
-        <span className="min-w-0 flex-1">
+        <span className={`min-w-0 flex-1 ${hasAudio ? 'pr-12' : 'pr-14'}`}>
           <span className="block text-lg font-bold">{hotspot.label}</span>
           <span className="block text-muted">{hotspot.phrase}</span>
         </span>
@@ -185,6 +228,17 @@ function WordRow({ hotspot, open, lit, onHover, onToggle, onSave, onRemove }: {
           </span>
         )}
       </button>
+      <span className={`absolute top-[1.75rem] -translate-y-1/2 ${hasAudio ? 'right-14' : 'right-0'}`}>
+        <ConfirmButton
+          label={`Delete the word ${hotspot.label}`}
+          confirmLabel="Delete"
+          onConfirm={onRemove}
+          className="flex h-11 w-11 items-center justify-center rounded-full text-faint hover:text-danger"
+          armedClassName="flex h-11 items-center justify-center rounded-full bg-danger px-4 text-sm font-bold text-white"
+        >
+          <TrashIcon />
+        </ConfirmButton>
+      </span>
       {open && (
         <form
           className="rise flex flex-col gap-3 pb-4"
@@ -200,9 +254,6 @@ function WordRow({ hotspot, open, lit, onHover, onToggle, onSave, onRemove }: {
           <div className="flex gap-2">
             <button type="submit" disabled={!changed} className="rounded-full bg-ink px-5 py-2 font-bold text-white disabled:opacity-40">
               Save
-            </button>
-            <button type="button" onClick={() => void onRemove()} className="rounded-full px-4 py-2 font-bold text-danger">
-              Remove
             </button>
           </div>
         </form>

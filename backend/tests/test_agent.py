@@ -77,3 +77,15 @@ def test_inbox_lists_photos_and_videos_and_refuses_bad_ids(tmp_path, monkeypatch
     assert agent.media_path("m_bbb").name == "m_bbb.mov"
     assert agent.media_path("../secret") is None
     assert agent.media_path("m_missing") is None
+
+
+def test_rejected_media_is_not_proposed_again(tmp_path, monkeypatch):
+    from app import agent, store
+
+    monkeypatch.setattr(agent, "INBOX", tmp_path)
+    monkeypatch.setattr(agent, "REJECTED", tmp_path / "rejected.json")
+    monkeypatch.setattr(store, "SCENES_DIR", tmp_path / "scenes")
+    (tmp_path / "m_keep.jpg").write_bytes(b"jpg")
+    (tmp_path / "m_nope.jpg").write_bytes(b"jpg")
+    agent.reject_media("m_nope")
+    assert [m["media_id"] for m in agent.list_media()] == ["m_keep"]

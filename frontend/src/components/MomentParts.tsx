@@ -2,7 +2,8 @@ import { useState, type CSSProperties } from 'react'
 import type { Hotspot, Scene } from '../api'
 import { accentStyle, useMomentColor } from '../color'
 import { pop } from '../feedback'
-import { PlayIcon } from './Icons'
+import { ConfirmButton } from './ConfirmButton'
+import { PlayIcon, TrashIcon } from './Icons'
 
 /** Titles as people read them: wish scenes are already marked by their badge. */
 export const momentTitle = (scene: Scene) => {
@@ -35,7 +36,7 @@ function cropBox(polys: Hotspot['polygons'], w: number, h: number) {
 }
 
 /** One word as a card: the object itself lifted out of its photo, its name below. */
-export function WordCard({ hotspot, scene }: { hotspot: Hotspot; scene: Scene }) {
+export function WordCard({ hotspot, scene, onDelete }: { hotspot: Hotspot; scene: Scene; onDelete?: () => Promise<void> }) {
   const [said, setSaid] = useState(0)
   const polys = outlineOf(hotspot)
   const W = scene.width
@@ -45,6 +46,7 @@ export function WordCard({ hotspot, scene }: { hotspot: Hotspot; scene: Scene })
   const points = (poly: Hotspot['polygons'][number]) => poly.map(([x, y]) => `${x * W},${y * H}`).join(' ')
 
   return (
+    <div className="relative">
     <button
       key={said}
       onClick={() => {
@@ -68,6 +70,20 @@ export function WordCard({ hotspot, scene }: { hotspot: Hotspot; scene: Scene })
       </svg>
       <span className="px-3 pb-3 pt-1 text-center font-bold leading-tight [overflow-wrap:anywhere]">{hotspot.label.charAt(0).toUpperCase() + hotspot.label.slice(1)}</span>
     </button>
+    {onDelete && (
+      <span className="rise absolute -right-1.5 -top-1.5">
+        <ConfirmButton
+          label={`Delete the word ${hotspot.label}`}
+          confirmLabel="Delete"
+          onConfirm={onDelete}
+          className="flex h-9 w-9 items-center justify-center rounded-full bg-danger text-white shadow-md"
+          armedClassName="flex h-9 items-center justify-center rounded-full bg-danger px-3 text-sm font-bold text-white shadow-md"
+        >
+          <TrashIcon className="h-4 w-4" />
+        </ConfirmButton>
+      </span>
+    )}
+    </div>
   )
 }
 

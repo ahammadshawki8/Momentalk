@@ -24,6 +24,7 @@ INBOX = settings.data_dir / "inbox"
 INBOX.mkdir(parents=True, exist_ok=True)
 POSTERS = INBOX / "posters"  # one still per inbox video, for the stack and for look_at_media
 VIDEO_EXT = {".mp4", ".mov", ".m4v", ".webm"}
+REJECTED = INBOX / "rejected.json"  # media whose draft a caregiver rejected; never proposed again
 RUNS_DIR = settings.data_dir / "agent_runs"
 MAX_STEPS = 14
 MAX_SCENES = 3
@@ -89,8 +90,19 @@ def media_path(media_id: str) -> Path | None:
     return None
 
 
+def rejected_media() -> set[str]:
+    try:
+        return set(json.loads(REJECTED.read_text(encoding="utf-8")))
+    except (FileNotFoundError, ValueError):
+        return set()
+
+
+def reject_media(media_id: str) -> None:
+    REJECTED.write_text(json.dumps(sorted(rejected_media() | {media_id})), encoding="utf-8")
+
+
 def list_media() -> list[dict[str, Any]]:
-    used = {s.get("source_media") for s in store.list_scenes()}
+    used = {s.get("source_media") for s in store.list_scenes()} | rejected_media()
     return [{"media_id": p.stem, "file": p.name, "kind": media_kind(p)}
             for p in sorted(INBOX.iterdir()) if p.is_file() and media_kind(p) and p.stem not in used]
 

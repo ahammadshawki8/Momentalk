@@ -115,6 +115,7 @@ export const api = {
   scene: (id: string) => request<Scene>(`/api/scenes/${id}`),
   deleteScene: (id: string) => request<{ ok: boolean }>(`/api/scenes/${id}`, { method: 'DELETE' }),
   approve: (id: string) => request<Scene>(`/api/scenes/${id}/approve`, { method: 'POST' }),
+  rejectScene: (id: string) => request<{ ok: boolean }>(`/api/scenes/${id}/reject`, { method: 'POST' }),
   createPhotoScene: (photo: File, opts: { language: string; personName: string; narration?: string }) => {
     const form = new FormData()
     form.append('photo', photo)

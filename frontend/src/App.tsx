@@ -3,6 +3,7 @@ import { api, type Health, type Job, type Prefs, type Scene } from './api'
 import type { AvatarTraits } from './components/Avatar'
 import { SettingsSheet } from './components/SettingsSheet'
 import { TabBar } from './components/TabBar'
+import { Toaster } from './components/Toaster'
 import { loadLocalPrefs, resetLocalPrefs, saveLocalPrefs, type LocalPrefs } from './localPrefs'
 import { Building } from './pages/Building'
 import { Camera } from './pages/Camera'
@@ -181,7 +182,7 @@ export default function App() {
       />
     )
   }
-  if (page) return page
+  if (page) return <>{page}<Toaster /></>
 
   /* Tab pages. */
   const tab = route.name === 'tab' ? route.tab : 'home'
@@ -195,9 +196,10 @@ export default function App() {
         <HomePage {...common} health={health} onPlay={() => play()} onSettings={() => setSettingsOpen(true)} onSeeAll={() => goTab('moments')} />
       )}
       {tab === 'moments' && <MomentsPage {...common} />}
-      {tab === 'words' && <WordsPage {...common} />}
+      {tab === 'words' && <WordsPage {...common} onScenesChanged={refresh} />}
       {tab === 'today' && <TodayPage {...common} health={health} onScenesChanged={refresh} />}
 
+      <Toaster />
       <TabBar current={tab} todayBadge={drafts} onTab={goTab} onSnap={openCamera} />
 
       {settingsOpen && (

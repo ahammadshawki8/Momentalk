@@ -248,6 +248,19 @@ async def add_hotspot(scene_id: str, point: PointRequest, request: Request) -> d
     return hotspot
 
 
+@app.post("/api/scenes/{scene_id}/reject")
+def reject_scene(scene_id: str) -> dict:
+    """A caregiver says no to a draft: it is deleted, and its photo is not proposed again."""
+    scene = get_scene(scene_id)
+    public_demo.protect_demo_scene(scene)
+    if scene.get("status") != "draft":
+        raise HTTPException(409, "Only drafts can be rejected")
+    if scene.get("source_media"):
+        agent.reject_media(scene["source_media"])
+    store.delete_scene(scene_id)
+    return {"ok": True}
+
+
 @app.post("/api/scenes/{scene_id}/approve")
 def approve_scene(scene_id: str) -> dict:
     scene = get_scene(scene_id)

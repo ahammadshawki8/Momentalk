@@ -324,79 +324,9 @@
       "confidence": 0.8324607610702515,
       "order": 2,
       "audio_url": "/media/audio/1f1b8c6c265bfaacbfcd9312.mp3"
-    },
-    {
-      "id": "h_b3b8f49033",
-      "label": "Rubber Duck",
-      "phrase": "I see a duck.",
-      "synonyms": [
-        "duck",
-        "ducky",
-        "toy duck"
-      ],
-      "kind": "object",
-      "sam_phrase": "point prompt",
-      "polygons": [
-        [
-          [
-            0.666,
-            0.0098
-          ],
-          [
-            0.0,
-            0.0029
-          ],
-          [
-            0.0,
-            0.666
-          ],
-          [
-            0.666,
-            0.6641
-          ]
-        ]
-      ],
-      "confidence": 0.9921875,
-      "order": 3,
-      "audio_url": "/media/audio/c785ab75dd722691f792159e.mp3"
-    },
-    {
-      "id": "h_4c49a7f49c",
-      "label": "Rubber Duck",
-      "phrase": "I am a rubber duck.",
-      "synonyms": [
-        "duck",
-        "ducky",
-        "toy"
-      ],
-      "kind": "object",
-      "sam_phrase": "point prompt",
-      "polygons": [
-        [
-          [
-            0.0,
-            0.0029
-          ],
-          [
-            0.0,
-            0.666
-          ],
-          [
-            0.666,
-            0.6621
-          ],
-          [
-            0.6641,
-            0.0059
-          ]
-        ]
-      ],
-      "confidence": 0.9921875,
-      "order": 4,
-      "audio_url": "/media/audio/859eb10f050d33d8c777976d.mp3"
     }
   ],
-  "updated_at": 1793798633.3145242,
+  "updated_at": 1793817109.0540345,
   "agent_note": "This clear photo of Raya's yellow rubber duck toy is a playful object she can talk about and easily tap.",
   "source_media": "m_demo_duck",
   "agent_run": "a_ae9fb06909",

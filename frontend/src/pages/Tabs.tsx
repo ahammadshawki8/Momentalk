@@ -1,6 +1,8 @@
 import { useState, type ReactNode } from 'react'
 import { api, type Health, type Scene } from '../api'
-import { CheckIcon, SettingsIcon } from '../components/Icons'
+import { errorText, toast } from '../toast'
+import { ConfirmButton } from '../components/ConfirmButton'
+import { CheckIcon, SettingsIcon, TrashIcon } from '../components/Icons'
 import { Logo } from '../components/Logo'
 import { MomentTile, momentTitle, OpenForButton, plural, WordCard } from '../components/MomentParts'
 import { TodayCard } from '../components/TodayCard'
@@ -146,8 +148,9 @@ const KINDS: [string, string][] = [
   ['object', 'Things'],
 ]
 
-export function WordsPage({ scenes }: PageProps) {
+export function WordsPage({ scenes, onScenesChanged }: PageProps & { onScenesChanged: () => Promise<void> }) {
   const [kind, setKind] = useState('all')
+  const [editing, setEditing] = useState(false)
   const seen = new Set<string>()
   const words = scenes
     .filter((s) => s.status === 'approved')
@@ -168,7 +171,15 @@ export function WordsPage({ scenes }: PageProps) {
   const shown = kind === 'all' ? groups : groups.filter((g) => g.id === kind)
 
   return (
-    <Page eyebrow={plural(words.length, 'word', 'words')} title="Words">
+    <Page
+      eyebrow={plural(words.length, 'word', 'words')}
+      title="Words"
+      action={words.length > 0 && (
+        <button onClick={() => setEditing((e) => !e)} className={`h-11 shrink-0 rounded-full px-4 font-bold ${editing ? 'bg-ink text-white' : 'border border-line bg-white'}`}>
+          {editing ? 'Done' : 'Edit'}
+        </button>
+      )}
+    >
       <div className="snap-row -mx-5 mt-6 flex scroll-px-5 gap-2 overflow-x-auto px-5 sm:-mx-8 sm:scroll-px-8 sm:px-8" role="tablist" aria-label="Kinds of words">
         {[{ id: 'all', name: 'All' }, ...groups].map((g) => (
           <button key={g.id} role="tab" aria-selected={kind === g.id} onClick={() => setKind(g.id)}
@@ -183,7 +194,13 @@ export function WordsPage({ scenes }: PageProps) {
       {shown.map((g) => (
         <Section key={g.id} title={g.name} action={<span className="text-[length:var(--text-caption)] font-bold text-faint">{g.items.length}</span>}>
           <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
-            {g.items.map(({ h, s }) => <WordCard key={`${s.id}-${h.id}`} hotspot={h} scene={s} />)}
+            {g.items.map(({ h, s }) => (
+              <WordCard key={`${s.id}-${h.id}`} hotspot={h} scene={s}
+                        onDelete={editing ? async () => {
+                          await api.deleteHotspot(s.id, h.id)
+                          await onScenesChanged()
+                        } : undefined} />
+            ))}
           </div>
         </Section>
       ))}
@@ -228,7 +245,21 @@ function ReviewCard({ scene, personName, onOpen, onChanged }: {
 }) {
   const [busy, setBusy] = useState(false)
   return (
-    <article className="overflow-hidden rounded-[24px] border border-line bg-white">
+    <article className="relative overflow-hidden rounded-[24px] border border-line bg-white">
+      <span className="absolute right-3 top-3 z-10">
+        <ConfirmButton
+          label={`Reject ${momentTitle(scene)}`}
+          confirmLabel="Reject?"
+          onConfirm={async () => {
+            await api.rejectScene(scene.id)
+            await onChanged()
+          }}
+          className="flex h-11 w-11 items-center justify-center rounded-full bg-white/90 text-ink shadow backdrop-blur"
+          armedClassName="flex h-11 items-center justify-center rounded-full bg-danger px-4 font-bold text-white shadow"
+        >
+          <TrashIcon />
+        </ConfirmButton>
+      </span>
       <button onClick={() => onOpen(scene)} className="block w-full text-left active:opacity-80">
         <img src={scene.media_url} alt="" className="aspect-[16/10] w-full object-cover" draggable={false} />
         <span className="block px-5 pt-4">
@@ -245,6 +276,8 @@ function ReviewCard({ scene, personName, onOpen, onChanged }: {
             try {
               await api.approve(scene.id)
               await onChanged()
+            } catch (e) {
+              toast(errorText(e))
             } finally {
               setBusy(false)
             }

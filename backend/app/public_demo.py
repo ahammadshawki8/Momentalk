@@ -62,4 +62,4 @@ def limit_model_work(request: Request) -> None:
 
 def protect_demo_scene(scene: dict) -> None:
     if PUBLIC and scene.get("demo"):
-        raise HTTPException(403, "Sample moments are read only in the live demo. Snap your own moment to edit it.")
+        raise HTTPException(403, "Sample moments stay as they are in the live demo. Snap your own moment to change or delete it.")
