@@ -6,12 +6,15 @@ import asyncio
 import time
 from typing import Any
 
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile, WebSocket
+import os
+from pathlib import Path
+
+from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from . import agent, live, meta_client, prefs, store, tts
+from . import agent, live, meta_client, prefs, public_demo, store, tts
 from .config import settings
 from .cost import BudgetExceeded
 from .pipelines import scene as scene_pipeline
@@ -19,6 +22,7 @@ from .pipelines import narration
 from .pipelines import video as video_pipeline
 from .pipelines import wish as wish_pipeline
 
+public_demo.bootstrap_data()
 app = FastAPI(title="Momentalk API")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 app.mount("/media", StaticFiles(directory=settings.data_dir), name="media")
@@ -105,16 +109,18 @@ def get_scene(scene_id: str) -> dict:
 
 @app.delete("/api/scenes/{scene_id}")
 def delete_scene(scene_id: str) -> dict:
+    public_demo.protect_demo_scene(get_scene(scene_id))
     if not store.delete_scene(scene_id):
         raise HTTPException(404, "Scene not found")
     return {"ok": True}
 
 
 @app.post("/api/scenes/photo")
-async def create_photo_scene(photo: UploadFile = File(...), language: str = Form("en"),
+async def create_photo_scene(request: Request, photo: UploadFile = File(...), language: str = Form("en"),
                              person_name: str = Form("me"), narration: str | None = Form(None)) -> dict:
     if not settings.has_api_key:
         raise HTTPException(503, "Meta API key not configured")
+    public_demo.limit_model_work(request)
     raw = await photo.read()
     job = _new_job("photo")
     asyncio.create_task(_run_job(job, scene_pipeline.build_photo_scene(
@@ -123,10 +129,11 @@ async def create_photo_scene(photo: UploadFile = File(...), language: str = Form
 
 
 @app.post("/api/scenes/video")
-async def create_video_scene(video: UploadFile = File(...), language: str = Form("en"),
+async def create_video_scene(request: Request, video: UploadFile = File(...), language: str = Form("en"),
                              person_name: str = Form("me"), narration: str | None = Form(None)) -> dict:
     if not settings.has_api_key:
         raise HTTPException(503, "Meta API key not configured")
+    public_demo.limit_model_work(request)
     raw = await video.read()
     job = _new_job("video")
     asyncio.create_task(_run_job(job, video_pipeline.build_video_scene(
@@ -152,6 +159,7 @@ class HotspotUpdate(BaseModel):
 @app.patch("/api/scenes/{scene_id}/hotspots/{hotspot_id}")
 async def update_hotspot(scene_id: str, hotspot_id: str, update: HotspotUpdate) -> dict:
     scene = get_scene(scene_id)
+    public_demo.protect_demo_scene(scene)
     for hotspot in scene["hotspots"]:
         if hotspot["id"] == hotspot_id:
             if update.label is not None:
@@ -170,6 +178,7 @@ async def update_hotspot(scene_id: str, hotspot_id: str, update: HotspotUpdate) 
 @app.delete("/api/scenes/{scene_id}/hotspots/{hotspot_id}")
 def delete_hotspot(scene_id: str, hotspot_id: str) -> dict:
     scene = get_scene(scene_id)
+    public_demo.protect_demo_scene(scene)
     before = len(scene["hotspots"])
     scene["hotspots"] = [h for h in scene["hotspots"] if h["id"] != hotspot_id]
     if len(scene["hotspots"]) == before:
@@ -184,8 +193,10 @@ class PointRequest(BaseModel):
 
 
 @app.post("/api/scenes/{scene_id}/hotspots/at-point")
-async def add_hotspot(scene_id: str, point: PointRequest) -> dict:
+async def add_hotspot(scene_id: str, point: PointRequest, request: Request) -> dict:
     scene = get_scene(scene_id)
+    public_demo.protect_demo_scene(scene)
+    public_demo.limit_model_work(request)
     if not settings.has_api_key:
         raise HTTPException(503, "Meta API key not configured")
     hotspot = await scene_pipeline.add_hotspot_at_point(scene, point.x, point.y)
@@ -234,7 +245,8 @@ async def add_to_inbox(photos: list[UploadFile] = File(...)) -> list[dict]:
 
 
 @app.post("/api/agent/run")
-async def run_agent() -> dict:
+async def run_agent(request: Request) -> dict:
+    public_demo.limit_model_work(request)
     if not settings.has_api_key:
         raise HTTPException(503, "Meta API key not configured")
     job = _new_job("agent")
@@ -246,8 +258,10 @@ async def run_agent() -> dict:
 # ---------- Narrated Labels (Muse Voice Transcribe plus Muse Spark) ----------
 
 @app.post("/api/scenes/{scene_id}/narration")
-async def narrate_scene(scene_id: str, audio: UploadFile = File(...)) -> dict:
+async def narrate_scene(scene_id: str, request: Request, audio: UploadFile = File(...)) -> dict:
     scene = get_scene(scene_id)
+    public_demo.protect_demo_scene(scene)
+    public_demo.limit_model_work(request)
     if not settings.has_api_key:
         raise HTTPException(503, "Meta API key not configured")
     return await narration.propose_from_narration(scene, await audio.read(), audio.filename or "narration.webm")
@@ -260,7 +274,9 @@ class NarrationApply(BaseModel):
 
 @app.post("/api/scenes/{scene_id}/narration/apply")
 async def apply_narration(scene_id: str, body: NarrationApply) -> dict:
-    return await narration.apply_changes(get_scene(scene_id), body.changes, body.title)
+    scene = get_scene(scene_id)
+    public_demo.protect_demo_scene(scene)
+    return await narration.apply_changes(scene, body.changes, body.title)
 
 
 # ---------- Wish Scenes (Muse Image) ----------
@@ -270,8 +286,9 @@ class WishRequest(BaseModel):
 
 
 @app.post("/api/scenes/{scene_id}/wish")
-async def make_wish(scene_id: str, body: WishRequest) -> dict:
+async def make_wish(scene_id: str, body: WishRequest, request: Request) -> dict:
     place = get_scene(scene_id)
+    public_demo.limit_model_work(request)
     if not settings.has_api_key:
         raise HTTPException(503, "Meta API key not configured")
     p = prefs.load()
@@ -280,3 +297,11 @@ async def make_wish(scene_id: str, body: WishRequest) -> dict:
         place, body.activity.strip()[:80], person_name=p["person_name"], language=p["language"],
         progress=_progress(job))))
     return job
+
+
+
+# ---------- Built frontend (single container deploy) ----------
+
+_DIST = Path(os.environ.get("MOMENTALK_FRONTEND_DIST", Path(__file__).resolve().parents[2] / "frontend" / "dist"))
+if _DIST.exists():
+    app.mount("/", StaticFiles(directory=_DIST, html=True), name="frontend")
