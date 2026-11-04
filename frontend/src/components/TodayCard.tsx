@@ -45,52 +45,46 @@ export function TodayCard({ personName, apiReady, onDraftsReady }: TodayCardProp
 
   if (inbox.length === 0 && !job) {
     return (
-      <div className="rise mt-6 flex flex-wrap items-center gap-4 rounded-[20px] bg-white p-4 shadow-[0_2px_14px_rgba(21,23,26,0.06)]">
-        <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-canvas"><SparkIcon className="h-5 w-5" /></span>
-        <span className="min-w-0 flex-1">
-          <span className="block font-bold">Add today's photos</span>
-          <span className="block text-sm text-muted">Momentalk picks the best moments for {personName} and makes drafts for you to approve.</span>
-        </span>
+      <div className="rise mt-8 rounded-[24px] border border-line bg-white p-5">
+        <span className="flex h-11 w-11 items-center justify-center rounded-full bg-canvas"><SparkIcon className="h-5 w-5" /></span>
+        <h2 className="mt-4 text-[length:var(--text-title)] font-bold">Add today's photos</h2>
+        <p className="mt-1 leading-relaxed text-muted">Moment Builder picks the best ones for {personName} and makes drafts for you.</p>
         <FilePicker inputRef={input} onFiles={async (files) => setInbox(await api.addToInbox(files))} />
-        <button onClick={() => input.current?.click()} className="h-11 rounded-full bg-canvas px-4 font-bold active:scale-95">Add photos</button>
+        <button onClick={() => input.current?.click()} className="mt-5 h-12 w-full rounded-full bg-canvas font-bold active:scale-[0.98]">Add photos</button>
       </div>
     )
   }
 
   return (
-    <section className="rise mt-6 rounded-[20px] bg-white p-4 shadow-[0_2px_14px_rgba(21,23,26,0.06)]" aria-live="polite">
-      <div className="flex flex-wrap items-center gap-4">
-        <span className="flex -space-x-3">
-          {inbox.slice(0, 4).map((m) => (
-            <img key={m.media_id} src={m.url} alt="" className="h-12 w-12 rounded-xl border-2 border-white object-cover" />
-          ))}
-        </span>
-        <span className="min-w-0 flex-1">
-          <span className="block font-bold">
-            {running ? 'Moment Builder is working' : job?.status === 'done' ? 'Drafts are ready for your review' : `${inbox.length} photos from today`}
-          </span>
-          <span className="block text-sm text-muted">Muse Wonder picks the moments. Nothing reaches {personName} until you approve it.</span>
-        </span>
-        {!running && job?.status !== 'done' && (
-          <button
-            disabled={!apiReady}
-            onClick={async () => {
-              setError(null)
-              try {
-                setJob(await api.runAgent())
-              } catch (e) {
-                setError(e instanceof Error ? e.message : String(e))
-              }
-            }}
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-ink px-5 font-bold text-white active:scale-[0.98] disabled:opacity-40 sm:w-auto"
-          >
-            <SparkIcon /> Make moments from today
-          </button>
-        )}
-      </div>
+    <section className="rise mt-8 rounded-[24px] border border-line bg-white p-5" aria-live="polite">
+      <span className="flex -space-x-3">
+        {inbox.slice(0, 5).map((m) => (
+          <img key={m.media_id} src={m.url} alt="" className="h-12 w-12 rounded-full border-[3px] border-white object-cover" />
+        ))}
+      </span>
+      <h2 className="mt-4 text-[length:var(--text-title)] font-bold">
+        {running ? 'Moment Builder is working' : job?.status === 'done' ? 'Drafts are ready for your review' : `${inbox.length} photos from today`}
+      </h2>
+      <p className="mt-1 leading-relaxed text-muted">Muse Wonder picks the moments and writes a note on which words to model.</p>
+      {!running && job?.status !== 'done' && (
+        <button
+          disabled={!apiReady}
+          onClick={async () => {
+            setError(null)
+            try {
+              setJob(await api.runAgent())
+            } catch (e) {
+              setError(e instanceof Error ? e.message : String(e))
+            }
+          }}
+          className="mt-5 flex h-12 w-full items-center justify-center gap-2 rounded-full bg-ink font-bold text-white active:scale-[0.98] disabled:opacity-40"
+        >
+          <SparkIcon /> Make moments from today
+        </button>
+      )}
 
       {steps.length > 0 && (
-        <ol className="mt-4 space-y-1.5 border-t border-line pt-3">
+        <ol className="mt-5 space-y-2 border-t border-line pt-4">
           {steps.map((s, i) => (
             <li key={i} className="step-in flex items-center gap-2.5 text-sm" style={{ animationDelay: `${i * 40}ms` }}>
               <CheckIcon className="h-4 w-4 text-muted" />
@@ -100,7 +94,7 @@ export function TodayCard({ personName, apiReady, onDraftsReady }: TodayCardProp
           {running && <li className="flex items-center gap-2.5 text-sm text-muted"><span className="ml-1 h-2 w-2 animate-pulse rounded-full bg-ink" /> Thinking</li>}
         </ol>
       )}
-      {job?.run?.note && <p className="mt-3 rounded-2xl bg-canvas p-3 text-sm">{job.run.note}</p>}
+      {job?.run?.note && <p className="mt-4 rounded-[16px] bg-canvas p-4 text-[length:var(--text-caption)] leading-relaxed">{job.run.note}</p>}
       {(error || job?.error) && <p className="mt-3 text-sm text-danger">{error ?? job?.error}</p>}
     </section>
   )

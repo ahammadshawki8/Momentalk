@@ -2,8 +2,10 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { api, type Health, type Job, type Prefs, type Scene } from './api'
 import { SettingsSheet } from './components/SettingsSheet'
 import { TabBar } from './components/TabBar'
+import { loadLocalPrefs, saveLocalPrefs, type LocalPrefs } from './localPrefs'
 import { Building } from './pages/Building'
 import { Moment } from './pages/Moment'
+import { Onboarding } from './pages/Onboarding'
 import { Poster } from './pages/Poster'
 import { HomePage, MomentsPage, TodayPage, WordsPage } from './pages/Tabs'
 import { UserMode } from './pages/UserMode'
@@ -20,10 +22,19 @@ export default function App() {
   const [pendingIsVideo, setPendingIsVideo] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [revealId, setRevealId] = useState<string | null>(null)
+  const [local, setLocal] = useState<LocalPrefs>(loadLocalPrefs)
   const fileInput = useRef<HTMLInputElement>(null)
 
-  const PERSON_NAME = prefs?.person_name ?? 'Maya'
-  const LANGUAGE = prefs?.language ?? 'en'
+  const PERSON_NAME = local.personName
+  const LANGUAGE = local.language
+
+  const applyLocal = useCallback((next: LocalPrefs, shareWithServer: boolean) => {
+    setLocal(next)
+    saveLocalPrefs(next)
+    if (shareWithServer) {
+      void api.updatePrefs({ person_name: next.personName, language: next.language }).then(setPrefs).catch(() => undefined)
+    }
+  }, [])
 
   const refresh = useCallback(async () => {
     try {
@@ -84,79 +95,102 @@ export default function App() {
 
   const openScene = (s: Scene) => navigate({ name: 'moment', id: s.id })
   const play = (id?: string) => navigate({ name: 'play', id })
+  const shareWithServer = !!health && !health.public
 
-  /* Full screen pages, without the tab bar. */
-  if (route.name === 'play') {
-    return <UserMode scenes={scenes} initialSceneId={route.id} personName={PERSON_NAME} onExit={() => back()} />
-  }
-  if (route.name === 'building' && pendingPhoto) {
-    return <Building photoUrl={pendingPhoto} isVideo={pendingIsVideo} job={job} onCancel={() => back()} />
-  }
-  if (route.name === 'moment') {
-    const scene = scenes.find((s) => s.id === route.id)
-    if (scene) {
-      return (
-        <Moment
-          scene={scene}
-          personName={PERSON_NAME}
-          reveal={revealId === scene.id}
-          onBack={() => {
-            setRevealId(null)
-            back({ name: 'tab', tab: 'moments' })
-          }}
-          onPlay={(s) => play(s.id)}
-          onChanged={refresh}
-          onOpenScene={(id) => {
-            setRevealId(id)
-            navigate({ name: 'moment', id })
+  /* The file input stays mounted on every page so "Snap" works inside the same tap gesture. */
+  const picker = (
+    <input
+      ref={fileInput}
+      type="file"
+      accept="image/*,video/mp4,video/quicktime"
+      className="hidden"
+      onChange={(e) => {
+        const file = e.target.files?.[0]
+        if (file) void handlePhoto(file)
+        e.target.value = ''
+      }}
+    />
+  )
+
+  if (!local.onboarded) {
+    const sample = [...scenes].filter((s) => s.status === 'approved' && s.kind === 'photo')
+      .sort((a, b) => b.hotspots.length - a.hotspots.length)[0]
+    return (
+      <>
+        {picker}
+        <Onboarding
+          initial={local}
+          sample={sample}
+          onDone={(next, choice) => {
+            applyLocal(next, shareWithServer)
+            navigate({ name: 'tab', tab: 'home' }, { replace: true })
+            if (choice === 'snap') fileInput.current?.click()
           }}
         />
-      )
-    }
+      </>
+    )
   }
+
+  let page
+  if (route.name === 'play') {
+    page = <UserMode scenes={scenes} initialSceneId={route.id} personName={PERSON_NAME} onExit={() => back()} />
+  } else if (route.name === 'building' && pendingPhoto) {
+    page = <Building photoUrl={pendingPhoto} isVideo={pendingIsVideo} job={job} onCancel={() => back()} />
+  } else if (route.name === 'moment' && scenes.some((s) => s.id === route.id)) {
+    const scene = scenes.find((s) => s.id === route.id)!
+    page = (
+      <Moment
+        scene={scene}
+        personName={PERSON_NAME}
+        reveal={revealId === scene.id}
+        onBack={() => {
+          setRevealId(null)
+          back({ name: 'tab', tab: 'moments' })
+        }}
+        onPlay={(s) => play(s.id)}
+        onChanged={refresh}
+        onOpenScene={(id) => {
+          setRevealId(id)
+          navigate({ name: 'moment', id })
+        }}
+      />
+    )
+  }
+  if (page) return <>{picker}{page}</>
 
   /* Tab pages. */
   const tab = route.name === 'tab' ? route.tab : 'home'
   const drafts = scenes.filter((s) => s.status === 'draft').length
   const common = { scenes, personName: PERSON_NAME, onOpen: openScene }
+  const goTab = (t: typeof tab) => t !== tab && navigate({ name: 'tab', tab: t }, { replace: true })
 
   return (
     <>
-      <input
-        ref={fileInput}
-        type="file"
-        accept="image/*,video/mp4,video/quicktime"
-        className="hidden"
-        onChange={(e) => {
-          const file = e.target.files?.[0]
-          if (file) void handlePhoto(file)
-          e.target.value = ''
-        }}
-      />
-
+      {picker}
       {tab === 'home' && (
         <HomePage {...common} health={health} onPlay={() => play()} onSettings={() => setSettingsOpen(true)}
-                  onToday={() => navigate({ name: 'tab', tab: 'today' })} />
+                  onToday={() => goTab('today')} onSeeAll={() => goTab('moments')} />
       )}
       {tab === 'moments' && <MomentsPage {...common} />}
       {tab === 'words' && <WordsPage {...common} />}
       {tab === 'today' && <TodayPage {...common} health={health} onScenesChanged={refresh} />}
 
-      <TabBar
-        current={tab}
-        todayBadge={drafts}
-        onTab={(t) => t !== tab && navigate({ name: 'tab', tab: t }, { replace: true })}
-        onSnap={() => fileInput.current?.click()}
-      />
+      <TabBar current={tab} todayBadge={drafts} onTab={goTab} onSnap={() => fileInput.current?.click()} />
 
-      {settingsOpen && prefs && (
+      {settingsOpen && (
         <SettingsSheet
+          local={local}
           prefs={prefs}
           health={health}
           onClose={() => setSettingsOpen(false)}
-          onSaved={(p) => {
-            setPrefs(p)
+          onSaved={(nextLocal, nextPrefs) => {
+            applyLocal(nextLocal, false)
+            if (nextPrefs) setPrefs(nextPrefs)
             void api.health().then(setHealth)
+          }}
+          onRestartOnboarding={() => {
+            setSettingsOpen(false)
+            applyLocal({ ...local, onboarded: false }, false)
           }}
         />
       )}

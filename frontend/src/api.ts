@@ -65,6 +65,7 @@ export interface Job {
 
 export interface Health {
   ok: boolean
+  public?: boolean
   api_key: boolean
   open_weights_available: boolean
   language_model: { id: string; name: string; open_weights: string }

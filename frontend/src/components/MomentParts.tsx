@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react'
-import type { Hotspot, Point, Scene } from '../api'
+import type { Hotspot, Scene } from '../api'
 import { accentStyle, useMomentColor } from '../color'
 import { pop } from '../feedback'
 import { PlayIcon } from './Icons'
@@ -7,45 +7,33 @@ import { SceneCanvas } from './SceneCanvas'
 
 export const wordCount = (scenes: Scene[]) => scenes.reduce((n, s) => n + s.hotspots.length, 0)
 export const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`
-const toPoints = (poly: Point[], w: number, h: number) => poly.map(([x, y]) => `${x * w},${y * h}`).join(' ')
 
-/** The landing hero performs the product: outlines trace in, then the photo quietly talks. */
-export function LiveHero({ scene, personName, onOpen }: { scene: Scene; personName: string; onOpen: (s: Scene) => void }) {
+const KIND_LABEL: Record<string, string> = { photo: 'Photo', video: 'Video', wish: 'Wish' }
+
+/** Home hero: one calm moment. Outlines trace in, then one phrase at a time, no label clutter. */
+export function LiveHero({ scene, onOpen }: { scene: Scene; onOpen: (s: Scene) => void }) {
   const color = useMomentColor(scene.media_url)
   return (
-    <section style={accentStyle(color)} className="rise relative -mx-4 mt-5 sm:mx-0" aria-label={`Latest moment: ${scene.title}`}>
-      <img src={scene.media_url} alt="" aria-hidden="true"
-           className="pointer-events-none absolute inset-0 h-full w-full scale-105 object-cover opacity-50 blur-3xl saturate-150 sm:rounded-[32px]" />
-      <div className="relative">
-        <SceneCanvas
-          key={scene.id}
-          scene={scene}
-          mode="speak"
-          reveal
-          ambient
-          rounded="rounded-none sm:rounded-[32px]"
-          transitionName={`photo-${scene.id}`}
-          className="shadow-[0_30px_80px_rgba(21,23,26,0.25)]"
-        />
+    <section style={accentStyle(color)} className="rise mt-8" aria-label={`Featured moment: ${scene.title}`}>
+      <div className="overflow-hidden rounded-[28px] bg-stage shadow-[0_24px_60px_rgba(20,20,20,0.14)]">
+        <SceneCanvas key={scene.id} scene={scene} mode="speak" reveal ambient labels={false}
+                     rounded="rounded-[28px]" transitionName={`photo-${scene.id}`} />
       </div>
-      <div className="relative flex items-center justify-between gap-3 px-4 pt-3 sm:px-1">
-        <div className="min-w-0">
-          <p className="truncate text-2xl font-bold sm:text-3xl">{scene.title}</p>
-          <p className="text-sm text-muted">Tap anything in the photo to hear it</p>
-        </div>
-        <button
-          onClick={() => onOpen(scene)}
-          className="flex h-11 shrink-0 items-center gap-2 rounded-full bg-ink px-5 font-bold text-white active:scale-95"
-        >
-          Open
-        </button>
-      </div>
-      <p className="sr-only">Every person and thing in this photo speaks for {personName} when tapped.</p>
+      <button onClick={() => onOpen(scene)} className="mt-4 flex w-full items-center justify-between gap-3 text-left active:opacity-70">
+        <span className="min-w-0">
+          <span className="block truncate text-[length:var(--text-title)] font-bold">{scene.title}</span>
+          <span className="mt-0.5 flex items-center gap-2 text-[length:var(--text-caption)] text-muted">
+            <span className="h-2 w-2 rounded-full" style={{ background: 'var(--accent)' }} aria-hidden="true" />
+            {plural(scene.hotspots.length, 'word', 'words')}, tap the photo to hear them
+          </span>
+        </span>
+        <span className="text-[length:var(--text-caption)] font-bold text-muted">Open</span>
+      </button>
     </section>
   )
 }
 
-/** A word from one moment, in that moment's color. Tap to hear it. */
+/** A word from one moment, as a calm pill with the moment's color as a small dot. Tap to hear it. */
 export function WordChip({ hotspot, scene }: { hotspot: Hotspot; scene: Scene }) {
   const color = useMomentColor(scene.media_url)
   return (
@@ -55,59 +43,46 @@ export function WordChip({ hotspot, scene }: { hotspot: Hotspot; scene: Scene })
         if (hotspot.audio_url) void new Audio(hotspot.audio_url).play().catch(() => undefined)
         else if ('speechSynthesis' in window) window.speechSynthesis.speak(new SpeechSynthesisUtterance(hotspot.phrase))
       }}
-      style={{ ...accentStyle(color), '--press-shadow': 'color-mix(in srgb, var(--accent) 60%, #000)' } as CSSProperties}
-      className="press flex h-12 shrink-0 items-center gap-2 rounded-2xl px-4 font-toy text-lg font-extrabold"
+      style={accentStyle(color)}
+      className="flex h-11 shrink-0 items-center gap-2 rounded-full border border-line bg-white px-4 font-bold transition active:scale-95 active:bg-canvas"
       aria-label={`${hotspot.label}. Says ${hotspot.phrase}`}
     >
-      <span className="rounded-full" style={{ background: 'var(--accent)', width: 10, height: 10 }} aria-hidden="true" />
-      <span style={{ color: 'var(--color-ink)' }}>{hotspot.label}</span>
+      <span className="h-2 w-2 rounded-full" style={{ background: 'var(--accent)' }} aria-hidden="true" />
+      {hotspot.label}
     </button>
   )
 }
 
+/** Editorial tile: the photo speaks for itself, the caption sits quietly below. */
 export function MomentTile({ scene, onOpen }: { scene: Scene; onOpen: (s: Scene) => void }) {
   const color = useMomentColor(scene.media_url)
-  const isVideo = scene.kind === 'video' && scene.video_url
+  const isVideo = scene.kind === 'video' && !!scene.video_url
   return (
-    <button
-      onClick={() => onOpen(scene)}
-      style={accentStyle(color)}
-      className="group relative block aspect-[4/3] w-full overflow-hidden rounded-[24px] bg-stage text-left transition duration-300 hover:-translate-y-1 hover:shadow-[0_18px_40px_rgba(21,23,26,0.18)] active:scale-[0.98]"
-    >
-      {isVideo ? (
-        <video src={scene.video_url} poster={scene.media_url} muted autoPlay loop playsInline
-               className="absolute inset-0 h-full w-full object-cover" />
-      ) : (
-        <img src={scene.media_url} alt="" draggable={false}
-             className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
-             style={{ viewTransitionName: `photo-${scene.id}` } as CSSProperties} />
-      )}
-      {!isVideo && (
-        <svg viewBox={`0 0 ${scene.width} ${scene.height}`} preserveAspectRatio="xMidYMid slice"
-             className="pointer-events-none absolute inset-0 h-full w-full opacity-70 transition group-hover:opacity-100" aria-hidden="true">
-          {scene.hotspots.flatMap((h) => h.polygons.map((poly, i) => (
-            <polygon key={`${h.id}-${i}`} points={toPoints(poly, scene.width, scene.height)}
-                     fill="none" stroke="#fff" strokeWidth={Math.max(4, scene.width / 110)} strokeLinejoin="round"
-                     style={{ filter: 'drop-shadow(0 0 4px var(--accent))' }} />
-          )))}
-        </svg>
-      )}
-      <span className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/60 to-transparent" aria-hidden="true" />
-      <span className="absolute bottom-3 left-3 right-3 flex items-end justify-between gap-2">
-        <span className="min-w-0 truncate text-lg font-bold text-white drop-shadow">{scene.title}</span>
-        <span className="shrink-0 rounded-lg px-2 py-0.5 text-sm font-bold" style={{ background: 'var(--accent)', color: 'var(--accent-ink)' }}>
-          {scene.hotspots.length === 0 ? 'Ready to outline' : plural(scene.hotspots.length, 'word', 'words')}
-        </span>
+    <button onClick={() => onOpen(scene)} style={accentStyle(color)} className="group block w-full text-left active:scale-[0.98]">
+      <span className="relative block aspect-[4/5] overflow-hidden rounded-[20px] bg-stage">
+        {isVideo ? (
+          <video src={scene.video_url} poster={scene.media_url} muted autoPlay loop playsInline
+                 className="absolute inset-0 h-full w-full object-cover" />
+        ) : (
+          <img src={scene.media_url} alt="" draggable={false}
+               className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
+               style={{ viewTransitionName: `photo-${scene.id}` } as CSSProperties} />
+        )}
+        {(isVideo || scene.kind === 'wish') && (
+          <span className="absolute left-2.5 top-2.5 flex items-center gap-1 rounded-full bg-black/45 px-2.5 py-1 text-[length:var(--text-caption)] font-bold text-white backdrop-blur">
+            {isVideo && <PlayIcon className="h-3 w-3" />}
+            {KIND_LABEL[scene.kind]}
+          </span>
+        )}
+        {scene.status === 'draft' && (
+          <span className="absolute right-2.5 top-2.5 rounded-full bg-white px-2.5 py-1 text-[length:var(--text-caption)] font-bold">Draft</span>
+        )}
       </span>
-      {isVideo && (
-        <span className="absolute left-3 top-3 flex items-center gap-1 rounded-lg bg-black/55 px-2 py-0.5 text-sm font-bold text-white backdrop-blur">
-          <PlayIcon className="h-3 w-3" /> Video
-        </span>
-      )}
-      {scene.status === 'draft' && (
-        <span className="absolute right-3 top-3 rounded-lg bg-white px-2 py-0.5 text-sm font-bold text-ink">Needs review</span>
-      )}
+      <span className="mt-2.5 block truncate font-bold">{scene.kind === 'wish' ? scene.title.replace(/^Wish:\s*/i, '') : scene.title}</span>
+      <span className="mt-0.5 flex items-center gap-1.5 text-[length:var(--text-caption)] text-muted">
+        <span className="h-1.5 w-1.5 rounded-full" style={{ background: 'var(--accent)' }} aria-hidden="true" />
+        {scene.hotspots.length === 0 ? 'Ready to outline' : plural(scene.hotspots.length, 'word', 'words')}
+      </span>
     </button>
   )
 }
-

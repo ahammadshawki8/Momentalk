@@ -64,6 +64,7 @@ async def _run_job(job: dict[str, Any], coro) -> None:
 def health() -> dict:
     return {
         "ok": True,
+        "public": public_demo.PUBLIC,
         "api_key": settings.has_api_key,
         "open_weights_available": settings.has_open_weights,
         "language_model": meta_client.language_model(),
@@ -85,6 +86,8 @@ class PrefsUpdate(BaseModel):
 
 @app.patch("/api/prefs")
 def update_prefs(update: PrefsUpdate) -> dict:
+    if public_demo.PUBLIC:
+        raise HTTPException(403, "Shared settings are locked in the live demo. Name and language are saved on this device.")
     data = update.model_dump(exclude_none=True)
     if data.get("private_mode") and not settings.has_open_weights:
         raise HTTPException(409, "Private Mode needs an open weights partner key (OPEN_WEIGHTS_API_KEY)")

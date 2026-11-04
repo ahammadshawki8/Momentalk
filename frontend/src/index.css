@@ -1,14 +1,23 @@
 @import "tailwindcss";
 
 @theme {
-  --color-canvas: #f1f2f4;
+  /* Neutral, calm, photo first. Moment colors are used sparingly; one warm brand yellow marks the person. */
+  --color-canvas: #f4f4f2;
   --color-card: #ffffff;
-  --color-ink: #15171a;
-  --color-ink-2: #2b2f35;
-  --color-muted: #6b7079;
-  --color-line: #e3e5e9;
-  --color-stage: #101214;
+  --color-ink: #141414;
+  --color-ink-2: #2a2a2a;
+  --color-muted: #6e6e73;
+  --color-faint: #a1a1a6;
+  --color-line: #e6e6e3;
+  --color-stage: #101112;
+  --color-brand: #ffc24b;
   --color-danger: #c8341c;
+  /* Type scale (px): caption 13, body 17, title 20, headline 26, display 34 */
+  --text-caption: 0.8125rem;
+  --text-body: 1.0625rem;
+  --text-title: 1.25rem;
+  --text-headline: 1.625rem;
+  --text-display: 2.125rem;
   --font-sans: "Atkinson Hyperlegible", ui-sans-serif, system-ui, sans-serif;
   --font-toy: "Rubik", ui-rounded, system-ui, sans-serif;
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);

@@ -25,6 +25,8 @@ interface SceneCanvasProps {
   speakRequest?: HeardPulse | null
   /** Landing page: quietly cycle stickers on the hotspots, no sound, so the photo looks like it is talking. */
   ambient?: boolean
+  /** Show word labels during the reveal (off for calm, minimal surfaces). */
+  labels?: boolean
   className?: string
 }
 
@@ -54,17 +56,36 @@ function layoutLabels(items: { id: string; label: string; x: number; y: number }
   const placed: { x: number; y: number; w: number }[] = []
   const out = new Map<string, { x: number; y: number }>()
   for (const item of [...items].sort((a, b) => a.y - b.y)) {
-    let y = item.y
     const w = width(item.label)
+    // Labels sit above their anchor, so keep the anchor one label height below the top and inside the sides.
+    const x = Math.min(1 - w / 2 - 0.01, Math.max(w / 2 + 0.01, item.x))
+    let y = Math.max(h * 1.15, item.y)
     for (let guard = 0; guard < 8; guard++) {
-      const hit = placed.find((p) => Math.abs(p.x - item.x) < (p.w + w) / 2 && Math.abs(p.y - y) < h)
+      const hit = placed.find((p) => Math.abs(p.x - x) < (p.w + w) / 2 && Math.abs(p.y - y) < h)
       if (!hit) break
       y = hit.y + h
     }
-    placed.push({ x: item.x, y, w })
-    out.set(item.id, { x: item.x, y: Math.min(0.97, y) })
+    placed.push({ x, y, w })
+    out.set(item.id, { x, y: Math.min(0.97, y) })
   }
   return out
+}
+
+/** Stickers sit above a hotspot; near an edge they would be clipped, so shift them back inside the photo. */
+function keepInside(el: HTMLDivElement | null) {
+  const frame = el?.offsetParent as HTMLElement | null
+  if (!el || !frame) return
+  // Measure from the unshifted position (the ref can be attached more than once).
+  el.style.marginLeft = '0px'
+  el.style.marginTop = '0px'
+  const pad = 8
+  const half = el.offsetWidth / 2
+  const left = el.offsetLeft
+  const dx = Math.max(pad + half - left, 0) - Math.max(left + half + pad - frame.clientWidth, 0)
+  // The sticker is lifted by about its own height above its anchor.
+  const dy = Math.max(pad + el.offsetHeight * 1.1 - el.offsetTop, 0)
+  el.style.marginLeft = `${dx}px`
+  el.style.marginTop = `${dy}px`
 }
 
 function topCenter(poly: Point[]): [number, number] {
@@ -76,7 +97,7 @@ function topCenter(poly: Point[]): [number, number] {
 /** A photo whose people and things are outlined hotspots that speak when touched. */
 export function SceneCanvas({
   scene, mode, selectedId, heard = [], reveal = false, showLabels = false, rounded = 'rounded-[24px]',
-  transitionName, onSpeak, onSelect, onEmptyTap, onHover, speakRequest, ambient = false, className = '',
+  transitionName, onSpeak, onSelect, onEmptyTap, onHover, speakRequest, ambient = false, labels = true, className = '',
 }: SceneCanvasProps) {
   const [pressed, setPressed] = useState<string | null>(null)
   const [tapped, setTapped] = useState<string | null>(null)
@@ -251,7 +272,7 @@ export function SceneCanvas({
         })}
       </svg>
 
-      {(showLabels || reveal) &&
+      {(showLabels || (reveal && labels)) &&
         ordered.map((h, index) => {
           const spot = labelSpots.get(h.id)
           if (!spot) return null
@@ -291,8 +312,9 @@ export function SceneCanvas({
       {stickers.map((s) => (
         <div
           key={s.key}
-          className="sticker pointer-events-none absolute whitespace-nowrap rounded-2xl px-4 py-2 text-xl font-extrabold sm:text-3xl"
+          className="sticker pointer-events-none absolute max-w-[92%] overflow-hidden text-ellipsis whitespace-nowrap rounded-2xl px-4 py-2 text-xl font-extrabold sm:text-3xl"
           style={{ left: `${s.x * 100}%`, top: `${s.y * 100}%` }}
+          ref={keepInside}
         >
           {s.label}
         </div>
