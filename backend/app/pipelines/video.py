@@ -24,7 +24,7 @@ from .scene import CONCEPT_SCHEMA, Progress, concept_prompt, voice_hotspots
 MAX_SECONDS = 20
 TARGET_WIDTH = 960
 SAMPLE_FPS = 10
-MAX_VIDEO_CONCEPTS = 6
+MAX_VIDEO_CONCEPTS = 4
 
 
 def _ffmpeg() -> str:
@@ -63,6 +63,19 @@ def normalize_clip(src: Path, dst: Path, keyframe: Path) -> dict[str, Any]:
     subprocess.run([ff, "-y", "-loglevel", "error", "-ss", "0.5", "-i", str(dst), "-frames:v", "1",
                     "-q:v", "3", str(keyframe)], check=True)
     return probe(dst)
+
+
+def sample_frames(clip: Path, duration: float, folder: Path, count: int = 3) -> list[Path]:
+    """Frames from start, middle and end so the model sees things that appear later (the ball)."""
+    ff = _ffmpeg()
+    frames = []
+    for i in range(count):
+        t = max(0.3, min(duration - 0.3, duration * (i + 0.5) / count))
+        out = folder / f"sample_{i}.jpg"
+        subprocess.run([ff, "-y", "-loglevel", "error", "-ss", f"{t:.2f}", "-i", str(clip), "-frames:v", "1",
+                        "-vf", "scale=768:-2", "-q:v", "4", str(out)], check=True)
+        frames.append(out)
+    return frames
 
 
 def build_tracks(frames: list[SamFrame], fps: float, width: int, height: int,
@@ -108,14 +121,21 @@ async def build_video_scene(raw: bytes, filename: str, *, language: str = "en", 
     frame_count = int(info["duration"] * fps) or 1
 
     await report("understanding", model=meta_client.language_model()["name"])
+    samples = await asyncio.to_thread(sample_frames, clip, info["duration"], folder)
+    video_rules = (
+        f"\nThese are {len(samples)} frames from the start, middle and end of one short video. "
+        f"Pick at most {MAX_VIDEO_CONCEPTS} things: ONLY people, pets, and the things they play with or hold "
+        "(a ball, a toy, food). Never scenery, plants, buildings, furniture, or vehicles."
+    )
     plan = await meta_client.chat_json(
         [{"role": "user", "content": [
-            {"type": "text", "text": concept_prompt(language, person_name, narration)
-             + f"\nThis is the first frame of a short video. Pick at most {MAX_VIDEO_CONCEPTS} things that move or matter, people and pets first."},
-            {"type": "image_url", "image_url": {"url": meta_client.image_data_url(keyframe.read_bytes())}},
+            {"type": "text", "text": concept_prompt(language, person_name, narration) + video_rules},
+            *[{"type": "image_url", "image_url": {"url": meta_client.image_data_url(f.read_bytes())}} for f in samples],
         ]}],
-        CONCEPT_SCHEMA, schema_name="video_plan",
+        CONCEPT_SCHEMA, schema_name="video_plan", reasoning_effort="minimal",
     )
+    for f in samples:
+        f.unlink(missing_ok=True)
     concepts = plan["concepts"][:MAX_VIDEO_CONCEPTS]
 
     await report("segmenting", model="SAM 3.1 video", count=len(concepts), labels=[c["label"] for c in concepts])

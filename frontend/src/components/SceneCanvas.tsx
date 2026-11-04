@@ -23,6 +23,8 @@ interface SceneCanvasProps {
   onHover?: (hotspotId: string | null) => void
   /** Speak a hotspot from outside the photo (word buttons), as if it was tapped. */
   speakRequest?: HeardPulse | null
+  /** Landing page: quietly cycle stickers on the hotspots, no sound, so the photo looks like it is talking. */
+  ambient?: boolean
   className?: string
 }
 
@@ -74,7 +76,7 @@ function topCenter(poly: Point[]): [number, number] {
 /** A photo whose people and things are outlined hotspots that speak when touched. */
 export function SceneCanvas({
   scene, mode, selectedId, heard = [], reveal = false, showLabels = false, rounded = 'rounded-[24px]',
-  transitionName, onSpeak, onSelect, onEmptyTap, onHover, speakRequest, className = '',
+  transitionName, onSpeak, onSelect, onEmptyTap, onHover, speakRequest, ambient = false, className = '',
 }: SceneCanvasProps) {
   const [pressed, setPressed] = useState<string | null>(null)
   const [tapped, setTapped] = useState<string | null>(null)
@@ -113,6 +115,29 @@ export function SceneCanvas({
     scene.width / scene.height,
   )
 
+  function showSticker(h: Hotspot) {
+    const [x, y] = topCenter(polygonsAt(h, now)[0] ?? h.polygons[0])
+    const key = ++counter.current
+    setTapped(h.id)
+    setStickers((s) => [...s.slice(-1), { key, label: h.phrase, x, y }])
+    window.setTimeout(() => setTapped((cur) => (cur === h.id ? null : cur)), 650)
+    window.setTimeout(() => setStickers((s) => s.filter((item) => item.key !== key)), 1950)
+  }
+
+  // Ambient mode: after the reveal, gently show one phrase at a time without sound.
+  useEffect(() => {
+    if (!ambient || scene.hotspots.length === 0) return
+    const order = [...scene.hotspots].sort((a, b) => a.order - b.order)
+    let i = 0
+    const start = window.setTimeout(function tick() {
+      showStickerRef.current(order[i % order.length])
+      i += 1
+      timer = window.setTimeout(tick, 2600)
+    }, 250 + order.length * 200 + 1200)
+    let timer = start
+    return () => window.clearTimeout(timer)
+  }, [ambient, scene.hotspots])
+
   function speak(h: Hotspot) {
     pop()
     audio.current?.pause()
@@ -123,17 +148,14 @@ export function SceneCanvas({
     } else {
       speakWithBrowser(h.phrase, scene.language)
     }
-    const [x, y] = topCenter(polygonsAt(h, now)[0] ?? h.polygons[0])
-    const key = ++counter.current
-    setTapped(h.id)
-    setStickers((s) => [...s.slice(-1), { key, label: h.phrase, x, y }])
-    window.setTimeout(() => setTapped((cur) => (cur === h.id ? null : cur)), 650)
-    window.setTimeout(() => setStickers((s) => s.filter((item) => item.key !== key)), 1950)
+    showSticker(h)
     onSpeak?.(h)
   }
 
   const speakRef = useRef(speak)
   speakRef.current = speak
+  const showStickerRef = useRef(showSticker)
+  showStickerRef.current = showSticker
   useEffect(() => {
     if (!speakRequest) return
     const h = scene.hotspots.find((x) => x.id === speakRequest.hotspotId)

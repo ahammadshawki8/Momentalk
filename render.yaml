@@ -1,0 +1,14 @@
+# Render Blueprint: free Docker web service for the Momentalk live demo.
+services:
+  - type: web
+    name: momentalk
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: MODEL_API_KEY
+        sync: false
+      - key: OPEN_WEIGHTS_API_KEY
+        sync: false

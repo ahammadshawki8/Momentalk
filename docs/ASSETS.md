@@ -20,6 +20,12 @@ All from Unsplash under the [Unsplash License](https://unsplash.com/license): fr
 
 Selection rule: everyday moments with several distinct things to tap, and no identifiable children (project consent rule).
 
+## Stock video (`demo-assets/stock/`)
+
+| File | Use | Source | Creator | License |
+|---|---|---|---|---|
+| `park_dog.mp4` | Talking video scene "Fetch with Biscuit" | https://www.pexels.com/video/playful-dog-chasing-ball-in-lush-park-38356489/ | Yesim G. Ozdemir | Pexels License |
+
 ## Generated audio
 
 Phrase audio is synthesized at runtime with edge-tts (Microsoft neural voices) and cached in `backend/data/audio/`. Not committed.
