@@ -45,6 +45,26 @@ function speakWithBrowser(text: string, language = 'en') {
   window.speechSynthesis.speak(utterance)
 }
 
+/** Greedy label layout: nudge a label down until it no longer covers one already placed. */
+function layoutLabels(items: { id: string; label: string; x: number; y: number }[], aspect: number) {
+  const h = 0.075 * Math.min(1.6, aspect)
+  const width = (label: string) => Math.min(0.45, 0.05 + label.length * 0.019)
+  const placed: { x: number; y: number; w: number }[] = []
+  const out = new Map<string, { x: number; y: number }>()
+  for (const item of [...items].sort((a, b) => a.y - b.y)) {
+    let y = item.y
+    const w = width(item.label)
+    for (let guard = 0; guard < 8; guard++) {
+      const hit = placed.find((p) => Math.abs(p.x - item.x) < (p.w + w) / 2 && Math.abs(p.y - y) < h)
+      if (!hit) break
+      y = hit.y + h
+    }
+    placed.push({ x: item.x, y, w })
+    out.set(item.id, { x: item.x, y: Math.min(0.97, y) })
+  }
+  return out
+}
+
 function topCenter(poly: Point[]): [number, number] {
   const xs = poly.map((p) => p[0])
   const ys = poly.map((p) => p[1])
@@ -83,6 +103,15 @@ export function SceneCanvas({
   const ordered = useMemo(() => [...scene.hotspots].sort((a, b) => a.order - b.order), [scene.hotspots])
   const heardKey = useMemo(() => new Map(heard.map((h) => [h.hotspotId, h.key])), [heard])
   const strokeWidth = Math.max(2.5, scene.width / 360)
+  const labelSpots = layoutLabels(
+    ordered.flatMap((h) => {
+      const current = polygonsAt(h, now)[0]
+      if (!current) return []
+      const [x, y] = topCenter(current)
+      return [{ id: h.id, label: h.label, x, y }]
+    }),
+    scene.width / scene.height,
+  )
 
   function speak(h: Hotspot) {
     pop()
@@ -202,9 +231,9 @@ export function SceneCanvas({
 
       {(showLabels || reveal) &&
         ordered.map((h, index) => {
-          const current = polygonsAt(h, now)[0]
-          if (!current) return null
-          const [x, y] = topCenter(current)
+          const spot = labelSpots.get(h.id)
+          if (!spot) return null
+          const { x, y } = spot
           return (
             <span
               key={`label-${h.id}`}

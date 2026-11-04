@@ -98,3 +98,19 @@ def test_real_sam_line_parses_box_and_payload_without_space():
     from app.sam_format import split_mask_payload
     assert split_mask_payload(obj.mask_payload) == (81, 83, "!!!!!fD]hMrG")
     assert (923 - 841 + 1, 680 - 600 + 1) == (83, 81)  # raster covers the inclusive box
+
+
+REAL_ONE_BIT_LINE = '<0f>0<|box;x1=841;y1=600;x2=923;y2=680;w=1800;h=1200;c=0.9336099624633789|><|mask;x=0;y=0;c=0.9336099624633789;data=81,83,!!!!!fD]hMrGjlC^Sa6RyNc`cRI90GAe$Q!iHeR8[6:m[Z5Y-]LsuLizR*Fa[*b8ofU_J&ln6*?wd]G)e+]V2|>'
+
+
+def test_official_decoder_turns_real_sam_mask_into_round_ball_outline():
+    obj = parse_sam_output(REAL_ONE_BIT_LINE)[0].objects[0]
+    full = decode_mask(obj)
+    assert full is not None, "meta-sam-parser must be installed"
+    assert full.shape == (1200, 1800)
+    x1, y1, x2, y2 = obj.box
+    inside = full[y1:y2 + 1, x1:x2 + 1]
+    assert 0.7 < inside.mean() < 0.85  # a ball fills about pi/4 of its box
+    assert full.sum() == inside.sum()  # nothing outside the box
+    polys = mask_to_polygons(full)
+    assert len(polys) == 1 and len(polys[0]) >= 8  # a curved outline, not a rectangle

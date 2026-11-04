@@ -60,3 +60,11 @@ def test_build_photo_scene_end_to_end_with_mocked_models(tmp_path, monkeypatch):
     assert min(xs) == 250 / 400 and max(xs) == 290 / 400
     assert all(h["audio_url"].endswith(".mp3") for h in scene["hotspots"])
     assert store.load_scene(scene["id"])["hotspots"][0]["label"] == "Biscuit"
+
+
+def test_fallback_phrases_keep_the_thing_not_the_location():
+    from app.pipelines.scene import fallback_phrases
+    assert fallback_phrases("long stick in the foreground") == ["long stick in the foreground", "long stick", "stick"]
+    assert fallback_phrases("black and white dog") == ["black and white dog", "white dog", "dog"]
+    assert fallback_phrases("girl on the left holding a cup") == ["girl on the left holding a cup", "girl"]
+    assert "foreground" not in fallback_phrases("foreground grass")

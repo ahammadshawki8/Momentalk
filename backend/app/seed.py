@@ -68,7 +68,22 @@ def seed_inbox() -> None:
         print(f"inbox {path.name}")
 
 
+async def rebuild_one(file: str) -> None:
+    """Rebuild a single demo moment, e.g. python -m app.seed --only park.jpg"""
+    title, narration = next((t, n) for f, t, n in DEMO if f == file)
+    for scene in store.list_scenes():
+        if scene.get("demo") and scene["title"] == title:
+            store.delete_scene(scene["id"])
+    scene = await build_photo_scene((PHOTOS / file).read_bytes(), person_name="Maya", narration=narration)
+    scene.update({"title": title, "demo": True})
+    store.save_scene(scene)
+    print(f"built '{title}': {[h['label'] for h in scene['hotspots']]} not found: {scene.get('not_found')}")
+
+
 async def main() -> None:
+    if "--only" in sys.argv:
+        await rebuild_one(sys.argv[sys.argv.index("--only") + 1])
+        return
     clear_demo()
     seed_inbox()
     if "--build" in sys.argv:

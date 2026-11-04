@@ -83,10 +83,15 @@ def split_mask_payload(data: str) -> tuple[int, int, str] | None:
 def _official_decoder():
     """Meta's reference decoder (pip package meta-sam-parser). The body is range coded, see docs/API_NOTES.md."""
     try:
-        from meta_sam_parser import decode_mask_to_raster  # type: ignore
+        from meta_sam_parser import SegmentationMask, decode_mask_to_raster  # type: ignore
     except Exception:
         return None
-    return decode_mask_to_raster
+
+    def decode(payload: str, width: int, height: int) -> bytes:
+        encoding = "one_bit" if payload[0] == "!" else "lossless"
+        return decode_mask_to_raster(SegmentationMask(encoding=encoding, payload=payload, width=width, height=height))
+
+    return decode
 
 
 def decode_mask(obj: SamObject) -> np.ndarray | None:
