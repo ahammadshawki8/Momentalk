@@ -353,3 +353,16 @@ body {
   0%, 100% { height: 30%; }
   50% { height: 100%; }
 }
+
+/* Thin bar for waits that report no steps. */
+.progress-indeterminate {
+  background: linear-gradient(90deg, transparent, var(--color-ink), transparent);
+  background-size: 40% 100%;
+  background-repeat: no-repeat;
+  animation: indeterminate 1.3s ease-in-out infinite;
+}
+
+@keyframes indeterminate {
+  from { background-position: -40% 0; }
+  to { background-position: 140% 0; }
+}

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { api, type Hotspot, type Scene } from '../api'
+import { api, type Hotspot, type Job, type Scene } from '../api'
 import { accentStyle, useMomentColor } from '../color'
 import { BackIcon, CheckIcon, PlayIcon } from '../components/Icons'
 import { Narrate } from '../components/Narrate'
@@ -10,15 +10,16 @@ import { OpenForButton } from '../components/MomentParts'
 interface MomentProps {
   scene: Scene
   personName: string
+  language: string
   reveal: boolean
   onBack: () => void
   onPlay: (scene: Scene) => void
   onChanged: () => Promise<void>
-  onOpenScene: (sceneId: string) => void
+  onBuildStarted: (job: Job, photoUrl: string) => void
 }
 
 /** One moment: the outlined photo and its words, ready to adjust and share with the person. */
-export function Moment({ scene, personName, reveal, onBack, onPlay, onChanged, onOpenScene }: MomentProps) {
+export function Moment({ scene, personName, language, reveal, onBack, onPlay, onChanged, onBuildStarted }: MomentProps) {
   const color = useMomentColor(scene.media_url)
   const [selected, setSelected] = useState<string | null>(null)
   const [hovered, setHovered] = useState<string | null>(null)
@@ -71,7 +72,12 @@ export function Moment({ scene, personName, reveal, onBack, onPlay, onChanged, o
               className="relative shadow-[0_20px_50px_rgba(21,23,26,0.18)]"
             />
           </div>
-          {note && <p className="mt-3 px-4 text-sm text-muted sm:px-0">{note}</p>}
+          {note && (
+            <p className="rise mx-4 mt-3 flex w-fit items-center gap-2 rounded-full border border-line bg-white px-4 py-2 text-[length:var(--text-caption)] font-bold sm:mx-0" aria-live="polite">
+              {busy && <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-ink/25 border-t-ink" aria-hidden="true" />}
+              {note}
+            </p>
+          )}
         </div>
 
         <aside className="rise px-4 sm:px-0">
@@ -112,10 +118,8 @@ export function Moment({ scene, personName, reveal, onBack, onPlay, onChanged, o
 
           {!scene.placeholder && <Narrate scene={scene} onApplied={onChanged} />}
           {scene.kind !== 'wish' && (
-            <WishMaker scene={scene} personName={personName} onMade={async (id) => {
-              await onChanged()
-              onOpenScene(id)
-            }} />
+            <WishMaker scene={scene} personName={personName} language={language}
+                       onStarted={(job) => onBuildStarted(job, scene.media_url)} />
           )}
 
         </aside>

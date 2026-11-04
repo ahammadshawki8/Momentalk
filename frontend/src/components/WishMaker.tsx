@@ -1,56 +1,47 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { api, type Job, type Scene } from '../api'
 import { SparkIcon } from './Icons'
 
 /** "Imagine Maya here": Muse Image puts an illustrated avatar into this place, doing something they want. */
-export function WishMaker({ scene, personName, onMade }: { scene: Scene; personName: string; onMade: (sceneId: string) => void }) {
+export function WishMaker({ scene, personName, language, onStarted }: {
+  scene: Scene
+  personName: string
+  language: string
+  onStarted: (job: Job) => void
+}) {
   const [activity, setActivity] = useState('')
-  const [job, setJob] = useState<Job | null>(null)
+  const [sending, setSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    if (!job || job.status !== 'running') return
-    const timer = window.setInterval(async () => {
-      const next = await api.job(job.id)
-      setJob(next)
-      if (next.status === 'done' && next.scene_id) onMade(next.scene_id)
-      if (next.status === 'error') setError(next.error)
-    }, 800)
-    return () => window.clearInterval(timer)
-  }, [job, onMade])
-
-  const busy = job?.status === 'running'
 
   return (
     <form
-      className="mt-3 rounded-2xl bg-white p-4 shadow-sm"
+      className="mt-3 rounded-[20px] border border-line bg-white p-4"
       onSubmit={async (e) => {
         e.preventDefault()
-        if (!activity.trim()) return
+        if (!activity.trim() || sending) return
         setError(null)
+        setSending(true)
         try {
-          const res = await fetch(`/api/scenes/${scene.id}/wish`, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ activity }),
-          })
-          if (!res.ok) throw new Error((await res.json()).detail ?? 'Could not imagine that')
-          setJob(await res.json())
+          onStarted(await api.makeWish(scene.id, { activity: activity.trim(), person_name: personName, language }))
         } catch (err) {
           setError(err instanceof Error ? err.message : String(err))
+          setSending(false)
         }
       }}
     >
-      <label className="block text-sm">
+      <label className="block">
         <span className="block font-bold">Imagine {personName} here</span>
         <span className="mt-3 flex gap-2">
           <input
             value={activity}
             onChange={(e) => setActivity(e.target.value)}
             placeholder="playing with the dogs"
-            className="min-w-0 flex-1 rounded-xl border border-line px-3 py-2 text-base"
-            disabled={busy}
+            className="h-12 min-w-0 flex-1 rounded-full border border-line bg-canvas px-4 text-base outline-none focus:border-ink"
+            disabled={sending}
           />
-          <button disabled={busy || !activity.trim()} className="flex items-center gap-1.5 rounded-full bg-ink px-4 py-2 font-bold text-white disabled:opacity-40">
-            <SparkIcon /> {busy ? 'Imagining' : 'Imagine'}
+          <button disabled={sending || !activity.trim()} className="flex h-12 items-center gap-1.5 rounded-full bg-ink px-5 font-bold text-white disabled:opacity-40">
+            {sending ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" aria-label="Starting" /> : <SparkIcon />}
+            Imagine
           </button>
         </span>
       </label>

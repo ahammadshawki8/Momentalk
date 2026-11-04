@@ -1,4 +1,5 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { MicIcon } from './Icons'
 import type { Scene } from '../api'
 
 interface Change {
@@ -63,48 +64,90 @@ export function Narrate({ scene, onApplied }: { scene: Scene; onApplied: () => P
   }
 
   const byId = new Map(scene.hotspots.map((h) => [h.id, h]))
+  const busy = state.name === 'thinking'
 
   return (
-    <div className="mt-5 rounded-2xl bg-white p-4 shadow-sm">
+    <div className="relative mt-5 overflow-hidden rounded-[20px] border border-line bg-white p-4">
       {state.name === 'review' ? (
         <div className="rise">
-          <p className="text-sm text-muted">You said: "{state.transcript}"</p>
+          <p className="text-[length:var(--text-caption)] text-muted">"{state.transcript}"</p>
           <ul className="mt-3 space-y-2">
             {state.changes.map((c) => (
-              <li key={c.hotspot_id} className="rounded-xl bg-canvas px-3 py-2">
+              <li key={c.hotspot_id} className="rounded-[14px] bg-canvas px-3 py-2.5">
                 <span className="text-muted line-through">{byId.get(c.hotspot_id)?.label}</span>{' '}
                 <span className="font-bold">{c.label}</span>
-                <span className="block text-sm text-muted">{c.phrase}</span>
+                <span className="block text-[length:var(--text-caption)] text-muted">{c.phrase}</span>
               </li>
             ))}
           </ul>
-          <div className="mt-3 flex gap-2">
-            <button onClick={() => void apply(state.changes, state.title)} className="rounded-full bg-ink px-4 py-2 font-bold text-white">
+          <div className="mt-4 flex gap-2">
+            <button onClick={() => void apply(state.changes, state.title)} className="h-12 flex-1 rounded-full bg-ink font-bold text-white active:scale-[0.98]">
               Use these words
             </button>
-            <button onClick={() => setState({ name: 'idle' })} className="rounded-full px-4 py-2 font-bold text-muted">Keep mine</button>
+            <button onClick={() => setState({ name: 'idle' })} className="h-12 rounded-full bg-canvas px-5 font-bold active:scale-[0.98]">Keep mine</button>
           </div>
         </div>
       ) : (
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-4">
           <button
             onClick={() => (state.name === 'recording' ? recorder.current?.stop() : void start())}
-            disabled={state.name === 'thinking' || scene.hotspots.length === 0}
+            disabled={busy || scene.hotspots.length === 0}
             aria-pressed={state.name === 'recording'}
-            className={`relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full disabled:opacity-40 ${state.name === 'recording' ? 'bg-danger text-white' : 'bg-ink text-white'}`}
-            aria-label={state.name === 'recording' ? 'Stop recording' : 'Describe this moment out loud'}
+            className={`relative flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-white transition disabled:opacity-60 ${state.name === 'recording' ? 'bg-danger' : 'bg-ink'}`}
+            aria-label={state.name === 'recording' ? 'Stop recording' : "Say who's in it"}
           >
             {state.name === 'recording' && <span className="listening-ring absolute inset-0 rounded-full border-2 border-danger" aria-hidden="true" />}
-            <span className={state.name === 'recording' ? 'h-3.5 w-3.5 rounded-sm bg-white' : 'h-3.5 w-3.5 rounded-full bg-white'} />
+            {busy ? (
+              <span className="h-5 w-5 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+            ) : state.name === 'recording' ? (
+              <span className="h-4 w-4 rounded-[4px] bg-white" />
+            ) : (
+              <MicIcon />
+            )}
           </button>
-          <span className="min-w-0 text-sm">
+          <span className="min-w-0 flex-1">
             <span className="block font-bold">
-              {state.name === 'recording' ? 'Listening. Tap to finish.' : state.name === 'thinking' ? 'Finding your words...' : 'Describe it in your words'}
+              {state.name === 'recording' ? 'Listening' : busy ? <ThinkingStep /> : "Say who's in it"}
             </span>
-            {state.name === 'error' && <span className="block text-muted">{state.message}</span>}
+            {state.name === 'recording' && <RecordingMeter />}
+            {state.name === 'error' && <span className="block text-[length:var(--text-caption)] text-muted">{state.message}</span>}
           </span>
         </div>
       )}
+      {busy && <span className="progress-indeterminate absolute inset-x-0 bottom-0 h-1" aria-hidden="true" />}
     </div>
+  )
+}
+
+/** One request does two jobs; show them in turn so the wait reads as progress. */
+function ThinkingStep() {
+  const [second, setSecond] = useState(false)
+  useEffect(() => {
+    const timer = window.setTimeout(() => setSecond(true), 2500)
+    return () => window.clearTimeout(timer)
+  }, [])
+  return (
+    <span key={String(second)} className="rise block">
+      {second ? 'Matching names to the photo' : 'Writing down what you said'}
+      <span className="block text-[length:var(--text-caption)] font-normal text-muted">{second ? 'Muse Spark' : 'Muse Voice Transcribe'}</span>
+    </span>
+  )
+}
+
+function RecordingMeter() {
+  const [seconds, setSeconds] = useState(0)
+  useEffect(() => {
+    const started = Date.now()
+    const timer = window.setInterval(() => setSeconds(Math.floor((Date.now() - started) / 1000)), 250)
+    return () => window.clearInterval(timer)
+  }, [])
+  return (
+    <span className="mt-1 flex items-center gap-2 text-[length:var(--text-caption)] text-muted">
+      <span className="flex h-4 items-center gap-[3px] text-danger" aria-hidden="true">
+        {[0, 1, 2, 3, 4].map((i) => <span key={i} className="eq-bar w-[3px] rounded-full bg-current" style={{ animationDelay: `${i * 110}ms` }} />)}
+      </span>
+      <span className="tabular-nums">0:{String(seconds).padStart(2, '0')}</span>
+      <span>Tap to finish</span>
+    </span>
   )
 }

@@ -36,7 +36,7 @@ export interface Scene {
 }
 
 export interface JobStage {
-  stage: 'understanding' | 'segmenting' | 'voicing' | 'done' | 'agent_start' | 'agent_step'
+  stage: 'imagining' | 'understanding' | 'segmenting' | 'voicing' | 'done' | 'agent_start' | 'agent_step'
   t: number
   model?: string
   count?: number
@@ -142,6 +142,8 @@ export const api = {
     files.forEach((f) => form.append('photos', f))
     return request<InboxItem[]>('/api/inbox', { method: 'POST', body: form })
   },
+  makeWish: (sceneId: string, body: { activity: string; person_name: string; language: string }) =>
+    request<Job>(`/api/scenes/${sceneId}/wish`, json('POST', body)),
   runAgent: () => request<Job>('/api/agent/run', { method: 'POST' }),
   recordTap: (sceneId: string, hotspotId: string) =>
     request<{ ok: boolean }>(`/api/scenes/${sceneId}/taps`, json('POST', { hotspot_id: hotspotId })),

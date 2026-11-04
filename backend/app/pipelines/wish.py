@@ -7,6 +7,7 @@ normal photo pipeline so it becomes a talking moment. Never generated from a rea
 
 from __future__ import annotations
 
+import time
 from typing import Any
 
 from .. import meta_client, store
@@ -24,7 +25,8 @@ def wish_prompt(activity: str) -> str:
 
 
 async def build_wish_scene(place_scene: dict[str, Any], activity: str, *, person_name: str, language: str,
-                           progress: Progress | None = None) -> dict[str, Any]:
+                           progress: Progress | None = None, replace_source: bool = False) -> dict[str, Any]:
+    started = time.time()
     if progress:
         await progress("imagining", {"model": "Muse Image"})
     folder = store.scene_dir(place_scene["id"])
@@ -32,6 +34,12 @@ async def build_wish_scene(place_scene: dict[str, Any], activity: str, *, person
     image = await meta_client.image_edit(wish_prompt(activity), [(place, "image/jpeg")])
     scene = await build_photo_scene(image, language=language, person_name=person_name,
                                     narration=f"This is a wish: {person_name} {activity}.", progress=progress)
+    # Muse Image output waits for the caregiver, like every other AI made moment.
     scene.update({"kind": "wish", "title": f"Wish: {activity[:28]}", "wish_of": place_scene["id"],
+                  "status": "draft", "build_seconds": round(time.time() - started, 1),
                   "models": ["muse-image-1.0", *scene["models"]]})
-    return store.save_scene(scene)
+    saved = store.save_scene(scene)
+    # A wish made from a draft replaces that draft, so only one version waits for review.
+    if replace_source:
+        store.delete_scene(place_scene["id"])
+    return saved

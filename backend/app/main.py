@@ -286,6 +286,8 @@ async def apply_narration(scene_id: str, body: NarrationApply) -> dict:
 
 class WishRequest(BaseModel):
     activity: str
+    person_name: str | None = None
+    language: str | None = None
 
 
 @app.post("/api/scenes/{scene_id}/wish")
@@ -295,10 +297,11 @@ async def make_wish(scene_id: str, body: WishRequest, request: Request) -> dict:
     if not settings.has_api_key:
         raise HTTPException(503, "Meta API key not configured")
     p = prefs.load()
+    replace_source = place.get("status") == "draft" and not (public_demo.PUBLIC and place.get("demo"))
     job = _new_job("wish")
     asyncio.create_task(_run_job(job, wish_pipeline.build_wish_scene(
-        place, body.activity.strip()[:80], person_name=p["person_name"], language=p["language"],
-        progress=_progress(job))))
+        place, body.activity.strip()[:80], person_name=(body.person_name or p["person_name"])[:24],
+        language=body.language or p["language"], progress=_progress(job), replace_source=replace_source)))
     return job
 
 

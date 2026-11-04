@@ -135,7 +135,7 @@ export default function App() {
   if (route.name === 'play') {
     page = <UserMode scenes={scenes} initialSceneId={route.id} personName={PERSON_NAME} onExit={() => back()} />
   } else if (route.name === 'building' && pendingPhoto) {
-    page = <Building photoUrl={pendingPhoto} isVideo={pendingIsVideo} job={job} onCancel={() => back()} />
+    page = <Building photoUrl={pendingPhoto} isVideo={pendingIsVideo} job={job} personName={PERSON_NAME} onCancel={() => back()} />
   } else if (route.name === 'moment' && scenes.some((s) => s.id === route.id)) {
     const scene = scenes.find((s) => s.id === route.id)!
     page = (
@@ -149,9 +149,12 @@ export default function App() {
         }}
         onPlay={(s) => play(s.id)}
         onChanged={refresh}
-        onOpenScene={(id) => {
-          setRevealId(id)
-          navigate({ name: 'moment', id })
+        language={LANGUAGE}
+        onBuildStarted={(started, photoUrl) => {
+          setPendingPhoto(photoUrl)
+          setPendingIsVideo(false)
+          setJob(started)
+          navigate({ name: 'building' })
         }}
       />
     )
