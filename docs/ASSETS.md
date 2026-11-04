@@ -44,3 +44,8 @@ Phrase audio is synthesized at runtime with edge-tts (Microsoft neural voices) a
 
 Logo mark (`frontend/public/logo-mark.svg`) drawn for this project during the hackathon.
 
+## Demo video only
+
+- Music: "Inspiring and optimistic Piano" by Bogart VGM, CC-BY 4.0, https://opengameart.org/content/inspiring-and-optimistic-piano (credit in the video description).
+- Narration and Mom's lines: Kokoro TTS (open weights, Apache 2.0), generated locally.
+- Every app shot is a scripted recording of the real app with real Meta model calls; the camera and microphone were fed the Unsplash breakfast photo and the Kokoro lines.
