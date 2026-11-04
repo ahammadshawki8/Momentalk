@@ -44,4 +44,3 @@ Phrase audio is synthesized at runtime with edge-tts (Microsoft neural voices) a
 
 Logo mark (`frontend/public/logo-mark.svg`) drawn for this project during the hackathon.
 
-Posters (`docs/brand/momentalk_poster_4x3.png`, `docs/brand/momentalk_poster_16x9.png`) are rendered from the app itself (`/?poster=4x3`, `/?poster=16x9`, see `frontend/src/pages/Poster.tsx`) using the Unsplash photos above. Re-render after the demo moments are outlined by SAM 3.1 so the outlines shown are real.

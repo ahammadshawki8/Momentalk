@@ -152,7 +152,7 @@ export function TodayCard({ apiReady, onDraftsReady }: TodayCardProps) {
         {steps.length > 0 && (
           <ol className="mt-5">
             {steps.map((s, i) => (
-              <li key={i} className="step-in relative flex gap-3 pb-3 last:pb-0" style={{ animationDelay: `${i * 40}ms` }}>
+              <li key={i} className="rise relative flex gap-3 pb-3 last:pb-0" style={{ animationDelay: `${i * 40}ms` }}>
                 {(i < steps.length - 1 || running) && <span className="absolute left-[11px] top-6 h-[calc(100%-12px)] w-px bg-line" aria-hidden="true" />}
                 <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-ink text-white"><CheckIcon className="h-3.5 w-3.5" /></span>
                 <span className="pt-0.5 leading-snug">{STEP_TEXT[s.tool ?? '']?.(s.detail) ?? s.tool}</span>

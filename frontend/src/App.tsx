@@ -7,7 +7,6 @@ import { loadLocalPrefs, resetLocalPrefs, saveLocalPrefs, type LocalPrefs } from
 import { Building } from './pages/Building'
 import { Moment } from './pages/Moment'
 import { Onboarding } from './pages/Onboarding'
-import { Poster } from './pages/Poster'
 import { HomePage, MomentsPage, TodayPage, WordsPage } from './pages/Tabs'
 import { UserMode } from './pages/UserMode'
 import { useRouter } from './router'
@@ -119,8 +118,6 @@ export default function App() {
   }
   if (!scenes) return <div className="h-full" />
 
-  const posterFormat = new URLSearchParams(window.location.search).get('poster')
-  if (posterFormat === '4x3' || posterFormat === '16x9') return <Poster scenes={scenes} format={posterFormat} />
 
   const openScene = (s: Scene) => navigate({ name: 'moment', id: s.id })
   const play = (id?: string) => navigate({ name: 'play', id })

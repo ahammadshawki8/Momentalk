@@ -15,14 +15,6 @@ export const PlayIcon = ({ className = 'h-5 w-5' }: IconProps) => (
   </svg>
 )
 
-export const SpeakerIcon = ({ className = 'h-7 w-7' }: IconProps) => (
-  <svg viewBox="0 0 24 24" className={className} aria-hidden="true" {...base} strokeWidth={2.2}>
-    <path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" fill="currentColor" />
-    <path d="M15.5 9a4 4 0 0 1 0 6" />
-    <path d="M18 6.5a7.5 7.5 0 0 1 0 11" />
-  </svg>
-)
-
 export const CheckIcon = ({ className = 'h-5 w-5' }: IconProps) => (
   <svg viewBox="0 0 24 24" className={className} aria-hidden="true" {...base} strokeWidth={2.6}>
     <path d="m5 12.5 4.5 4.5L19 7.5" />

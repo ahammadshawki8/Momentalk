@@ -3,9 +3,7 @@ import type { Hotspot, Scene } from '../api'
 import { accentStyle, useMomentColor } from '../color'
 import { pop } from '../feedback'
 import { PlayIcon } from './Icons'
-import { SceneCanvas } from './SceneCanvas'
 
-export const wordCount = (scenes: Scene[]) => scenes.reduce((n, s) => n + s.hotspots.length, 0)
 /** Titles as people read them: wish scenes are already marked by their badge. */
 export const momentTitle = (scene: Scene) => {
   const title = scene.kind === 'wish' ? scene.title.replace(/^Wish:\s*/i, '') : scene.title
@@ -14,29 +12,6 @@ export const momentTitle = (scene: Scene) => {
 export const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`
 
 const KIND_LABEL: Record<string, string> = { photo: 'Photo', video: 'Video', wish: 'Wish' }
-
-/** Home hero: one calm moment. Outlines trace in, then one phrase at a time, no label clutter. */
-export function LiveHero({ scene, onOpen }: { scene: Scene; onOpen: (s: Scene) => void }) {
-  const color = useMomentColor(scene.media_url)
-  return (
-    <section style={accentStyle(color)} className="rise mt-8" aria-label={`Featured moment: ${scene.title}`}>
-      <div className="overflow-hidden rounded-[28px] bg-stage shadow-[0_24px_60px_rgba(20,20,20,0.14)]">
-        <SceneCanvas key={scene.id} scene={scene} mode="speak" reveal ambient labels={false}
-                     rounded="rounded-[28px]" transitionName={`photo-${scene.id}`} />
-      </div>
-      <button onClick={() => onOpen(scene)} className="mt-4 flex w-full items-center justify-between gap-3 text-left active:opacity-70">
-        <span className="min-w-0">
-          <span className="block text-[length:var(--text-title)] font-bold leading-snug">{scene.title}</span>
-          <span className="mt-0.5 flex items-center gap-2 text-[length:var(--text-caption)] text-muted">
-            <span className="h-2 w-2 rounded-full" style={{ background: 'var(--accent)' }} aria-hidden="true" />
-            {plural(scene.hotspots.length, 'word', 'words')}
-          </span>
-        </span>
-        <span className="text-[length:var(--text-caption)] font-bold text-muted">Open</span>
-      </button>
-    </section>
-  )
-}
 
 /** Say a word: its cached voice, or the device voice when there is no audio. */
 export function sayHotspot(hotspot: Hotspot) {
@@ -92,22 +67,6 @@ export function WordCard({ hotspot, scene }: { hotspot: Hotspot; scene: Scene })
         )}
       </svg>
       <span className="px-3 pb-3 pt-1 text-center font-bold leading-tight [overflow-wrap:anywhere]">{hotspot.label.charAt(0).toUpperCase() + hotspot.label.slice(1)}</span>
-    </button>
-  )
-}
-
-/** A word from one moment, as a calm pill with the moment's color as a small dot. Tap to hear it. */
-export function WordChip({ hotspot, scene }: { hotspot: Hotspot; scene: Scene }) {
-  const color = useMomentColor(scene.media_url)
-  return (
-    <button
-      onClick={() => sayHotspot(hotspot)}
-      style={accentStyle(color)}
-      className="flex h-11 shrink-0 items-center gap-2 rounded-full border border-line bg-white px-4 font-bold transition active:scale-95 active:bg-canvas"
-      aria-label={`${hotspot.label}. Says ${hotspot.phrase}`}
-    >
-      <span className="h-2 w-2 rounded-full" style={{ background: 'var(--accent)' }} aria-hidden="true" />
-      {hotspot.label}
     </button>
   )
 }
