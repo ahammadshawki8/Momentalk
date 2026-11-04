@@ -72,31 +72,45 @@ def parse_sam_output(text: str) -> list[SamFrame]:
     return frames
 
 
-def decode_mask(obj: SamObject) -> np.ndarray | None:
-    """Decode a mask to a (H, W) uint8 array of 0/1, placed in full frame coordinates.
+def split_mask_payload(data: str) -> tuple[int, int, str] | None:
+    """`data=H,W,<marker><body>` -> (H, W, "<marker><body>"). Marker is '!' (one_bit) or '~' (lossless)."""
+    parts = data.split(",", 2)
+    if len(parts) != 3 or not parts[2] or parts[2][0] not in "!~":
+        return None
+    return int(parts[0]), int(parts[1]), parts[2]
 
-    UNVERIFIED: assumes `data=H,W,ENC payload` where ENC is '!' (one_bit: bits packed
-    MSB first, row major) or '~' (lossless). Returns None when the layout is not
-    understood so callers can fall back to the bounding box.
+
+def _official_decoder():
+    """Meta's reference decoder (pip package meta-sam-parser). The body is range coded, see docs/API_NOTES.md."""
+    try:
+        from meta_sam_parser import decode_mask_to_raster  # type: ignore
+    except Exception:
+        return None
+    return decode_mask_to_raster
+
+
+def decode_mask(obj: SamObject) -> np.ndarray | None:
+    """Decode a mask to a (frame_h, frame_w) uint8 array of 0/1 in full frame coordinates.
+
+    The H x W raster covers the inclusive bounding box, with raster (0, 0) at (x1, y1)
+    (official docs: mask dims always equal the inclusive box size; x and y are literal 0).
+    Returns None when the official decoder is unavailable so callers fall back to the box.
     """
     if not obj.mask_payload:
         return None
+    split = split_mask_payload(obj.mask_payload)
+    decoder = _official_decoder()
+    if not split or decoder is None:
+        return None
+    h, w, payload = split
     try:
-        head, payload = obj.mask_payload.split(" ", 1) if " " in obj.mask_payload else (obj.mask_payload, "")
-        parts = head.split(",")
-        h, w, enc = int(parts[0]), int(parts[1]), parts[2] if len(parts) > 2 else ""
-        if not payload and len(parts) > 3:
-            payload = ",".join(parts[3:])
-        raw = base64.b85decode(payload)
-        if enc == "!":
-            bits = np.unpackbits(np.frombuffer(raw, dtype=np.uint8))[: h * w]
-            local = bits.reshape(h, w)
-        else:
-            return None
+        raster = decoder(payload, w, h)
+        local = np.frombuffer(bytes(raster), dtype=np.uint8).reshape(h, w)
     except Exception:
         return None
     fw, fh = obj.frame_size
+    x1, y1 = obj.box[0], obj.box[1]
     full = np.zeros((fh, fw), dtype=np.uint8)
-    ox, oy = int(obj.mask_header.get("x", 0)), int(obj.mask_header.get("y", 0))
-    full[oy:oy + h, ox:ox + w] = local[: fh - oy, : fw - ox]
+    ph, pw = min(h, fh - y1), min(w, fw - x1)
+    full[y1:y1 + ph, x1:x1 + pw] = local[:ph, :pw]
     return full

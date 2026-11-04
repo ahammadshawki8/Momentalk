@@ -139,10 +139,12 @@ def probe_spark() -> None:
                         "phrase": {"type": "string"},
                     },
                     "required": ["sam_phrase", "label", "phrase"],
+                    "additionalProperties": False,
                 },
             },
         },
         "required": ["title", "concepts"],
+        "additionalProperties": False,
     }
     body = {
         "model": "muse-spark-1.3",
@@ -174,7 +176,7 @@ def sam_request(content: list[dict], extra: dict | None = None) -> dict:
 def probe_sam_image() -> None:
     ensure_media()
     with client() as c:
-        for phrase in ["dog", "birthday cake", "girl"]:
+        for phrase in ["small white dog", "red ball"]:
             body = sam_request([{"type": "input_text", "text": phrase},
                                 {"type": "input_image", "image_url": data_url(TEST_IMAGE)}])
             t = time.time()

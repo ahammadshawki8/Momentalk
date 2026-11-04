@@ -36,6 +36,15 @@ interface Sticker {
 // Stored normalized (0..1), drawn in image pixels so stroke and glow scale with the photo.
 const toPoints = (poly: Point[], w: number, h: number) => poly.map(([x, y]) => `${x * w},${y * h}`).join(' ')
 
+/** Fallback voice when a phrase has no cached audio: the device's own speech synthesis. */
+function speakWithBrowser(text: string, language = 'en') {
+  if (!('speechSynthesis' in window)) return
+  const utterance = new SpeechSynthesisUtterance(text)
+  utterance.lang = language
+  utterance.rate = 0.95
+  window.speechSynthesis.speak(utterance)
+}
+
 function topCenter(poly: Point[]): [number, number] {
   const xs = poly.map((p) => p[0])
   const ys = poly.map((p) => p[1])
@@ -77,10 +86,13 @@ export function SceneCanvas({
 
   function speak(h: Hotspot) {
     pop()
+    audio.current?.pause()
+    window.speechSynthesis?.cancel()
     if (h.audio_url) {
-      audio.current?.pause()
       audio.current = new Audio(h.audio_url)
-      window.setTimeout(() => void audio.current?.play().catch(() => undefined), 50)
+      window.setTimeout(() => void audio.current?.play().catch(() => speakWithBrowser(h.phrase, scene.language)), 50)
+    } else {
+      speakWithBrowser(h.phrase, scene.language)
     }
     const [x, y] = topCenter(polygonsAt(h, now)[0] ?? h.polygons[0])
     const key = ++counter.current

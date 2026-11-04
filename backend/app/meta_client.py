@@ -80,6 +80,19 @@ def image_data_url(data: bytes, mime: str = "image/jpeg") -> str:
 
 # ---------- Muse Spark / Muse Wonder (chat completions) ----------
 
+def strict_schema(schema: Any) -> Any:
+    """Meta strict JSON mode requires additionalProperties: false and every property required, on every object."""
+    if isinstance(schema, dict):
+        out = {k: strict_schema(v) for k, v in schema.items()}
+        if out.get("type") == "object" and "properties" in out:
+            out["additionalProperties"] = False
+            out["required"] = list(out["properties"].keys())
+        return out
+    if isinstance(schema, list):
+        return [strict_schema(v) for v in schema]
+    return schema
+
+
 async def chat(messages: list[dict], *, model: str | None = None, schema: dict | None = None,
                schema_name: str = "result", tools: list[dict] | None = None,
                reasoning_effort: str | None = "low", max_tokens: int = 4000) -> dict:
@@ -89,7 +102,7 @@ async def chat(messages: list[dict], *, model: str | None = None, schema: dict |
     body: dict[str, Any] = {"model": model, "messages": messages, "max_completion_tokens": max_tokens}
     if schema:
         body["response_format"] = {"type": "json_schema",
-                                   "json_schema": {"name": schema_name, "schema": schema, "strict": True}}
+                                   "json_schema": {"name": schema_name, "schema": strict_schema(schema), "strict": True}}
     if tools:
         body["tools"] = tools
     if reasoning_effort and not use_open:
@@ -102,10 +115,26 @@ async def chat(messages: list[dict], *, model: str | None = None, schema: dict |
     return data
 
 
+DASHES = {"—": ", ", "–": "-", "‒": "-", "―": ", "}
+
+
+def clean_text(value: Any) -> Any:
+    """Project rule: no em or en dashes in anything we show. Model text is normalized here."""
+    if isinstance(value, str):
+        for dash, repl in DASHES.items():
+            value = value.replace(" " + dash + " ", repl if repl != ", " else ", ").replace(dash, repl)
+        return value.replace(" ,", ",")
+    if isinstance(value, list):
+        return [clean_text(v) for v in value]
+    if isinstance(value, dict):
+        return {k: clean_text(v) for k, v in value.items()}
+    return value
+
+
 async def chat_json(messages: list[dict], schema: dict, **kwargs: Any) -> dict:
     data = await chat(messages, schema=schema, **kwargs)
     content = data["choices"][0]["message"]["content"]
-    return json.loads(content)
+    return clean_text(json.loads(content))
 
 
 # ---------- SAM 3.1 (responses, streamed text) ----------
@@ -115,7 +144,8 @@ async def _sam_stream(content: list[dict], metadata: dict | None = None, timeout
     body = {"model": settings.sam_model,
             "input": [{"type": "message", "role": "user", "content": content}],
             "stream": True,
-            "metadata": {"include_confidence": "true", **(metadata or {})}}
+            # one_bit is about 14x smaller than the default lossless coverage and decodes to the same 0/1 mask.
+            "metadata": {"include_confidence": "true", "mask_encoding": "one_bit", **(metadata or {})}}
     chunks: list[str] = []
     async with _client(timeout) as client:
         async with client.stream("POST", "/responses", json=body) as resp:

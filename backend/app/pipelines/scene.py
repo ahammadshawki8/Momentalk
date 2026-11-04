@@ -93,8 +93,11 @@ def hotspot_from_object(obj: SamObject, width: int, height: int) -> tuple[list, 
 
 async def voice_hotspots(hotspots: list[dict], language: str, voice: str | None) -> None:
     async def one(h: dict) -> None:
-        path = await tts.synthesize(h["phrase"], store.AUDIO_DIR, language, voice)
-        h["audio_url"] = store.media_url(path)
+        try:
+            path = await tts.synthesize(h["phrase"], store.AUDIO_DIR, language, voice)
+            h["audio_url"] = store.media_url(path)
+        except Exception:
+            h["audio_url"] = None  # browser speech synthesis takes over in the app
 
     await asyncio.gather(*(one(h) for h in hotspots))
 

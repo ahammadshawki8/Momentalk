@@ -1,5 +1,3 @@
-import base64
-
 import numpy as np
 import pytest
 
@@ -92,12 +90,11 @@ def test_parse_sam_output_empty_means_no_match():
     assert parse_sam_output("") == []
 
 
-def test_decode_one_bit_mask_hypothesis_places_mask_in_frame():
-    bits = np.array([[1, 0, 1], [0, 1, 0]], dtype=np.uint8)
-    payload = base64.b85encode(np.packbits(bits.flatten()).tobytes()).decode()
-    text = f"<0f>0<|box;x1=4;y1=5;x2=6;y2=6;w=10;h=8|><|mask;x=4;y=5;data=2,3,! {payload}|>"
-    obj = parse_sam_output(text)[0].objects[0]
-    full = decode_mask(obj)
-    assert full is not None and full.shape == (8, 10)
-    assert full[5:7, 4:7].tolist() == bits.tolist()
-    assert full.sum() == bits.sum()
+def test_real_sam_line_parses_box_and_payload_without_space():
+    line = "<0f>0<|box;x1=841;y1=600;x2=923;y2=680;w=1800;h=1200;c=0.93|><|mask;x=0;y=0;c=0.93;data=81,83,!!!!!fD]hMrG|>"
+    obj = parse_sam_output(line)[0].objects[0]
+    assert obj.box == (841, 600, 923, 680)
+    assert obj.mask_payload == "81,83,!!!!!fD]hMrG"
+    from app.sam_format import split_mask_payload
+    assert split_mask_payload(obj.mask_payload) == (81, 83, "!!!!!fD]hMrG")
+    assert (923 - 841 + 1, 680 - 600 + 1) == (83, 81)  # raster covers the inclusive box

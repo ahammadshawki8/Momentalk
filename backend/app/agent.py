@@ -93,7 +93,7 @@ async def describe(media_id: str) -> str:
         {"type": "text", "text": "In 2 sentences: who and what is in this photo, and is it clear enough to tap things in it?"},
         {"type": "image_url", "image_url": {"url": meta_client.image_data_url(image)}},
     ]}], max_tokens=300)
-    return data["choices"][0]["message"]["content"]
+    return meta_client.clean_text(data["choices"][0]["message"]["content"])
 
 
 async def run_moment_builder(person_name: str = "Maya", progress: Progress | None = None) -> dict[str, Any]:
@@ -114,13 +114,13 @@ async def run_moment_builder(person_name: str = "Maya", progress: Progress | Non
         messages.append({k: v for k, v in message.items() if k in ("role", "content", "tool_calls")})
         calls = message.get("tool_calls") or []
         if message.get("content"):
-            run["trace"].append({"kind": "thought", "text": message["content"]})
+            run["trace"].append({"kind": "thought", "text": meta_client.clean_text(message["content"])})
         if not calls:
             break
         finished = False
         for call in calls:
             name = call["function"]["name"]
-            args = json.loads(call["function"].get("arguments") or "{}")
+            args = meta_client.clean_text(json.loads(call["function"].get("arguments") or "{}"))
             result: Any
             if name == "list_todays_media":
                 result = list_media()
