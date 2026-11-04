@@ -48,3 +48,16 @@ export const SparkIcon =({ className = 'h-4 w-4' }: IconProps) => (
     <path d="M12 2.5l1.9 6.1 6.1 1.9-6.1 1.9L12 18.5l-1.9-6.1L4 10.5l6.1-1.9z" />
   </svg>
 )
+
+export const MicIcon = ({ className = 'h-5 w-5' }: IconProps) => (
+  <svg viewBox="0 0 24 24" className={className} aria-hidden="true" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+    <rect x="9" y="3" width="6" height="11" rx="3" fill="currentColor" />
+    <path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21" />
+  </svg>
+)
+
+export const CloseIcon = ({ className = 'h-5 w-5' }: IconProps) => (
+  <svg viewBox="0 0 24 24" className={className} aria-hidden="true" fill="none" stroke="currentColor" strokeWidth={2.6} strokeLinecap="round">
+    <path d="M6 6l12 12M18 6 6 18" />
+  </svg>
+)

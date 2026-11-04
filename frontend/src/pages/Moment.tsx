@@ -5,6 +5,7 @@ import { BackIcon, CheckIcon, PlayIcon } from '../components/Icons'
 import { Narrate } from '../components/Narrate'
 import { WishMaker } from '../components/WishMaker'
 import { SceneCanvas } from '../components/SceneCanvas'
+import { OpenForButton } from '../components/MomentParts'
 
 interface MomentProps {
   scene: Scene
@@ -134,15 +135,7 @@ export function Moment({ scene, personName, reveal, onBack, onPlay, onChanged, o
               <CheckIcon /> Approve for {personName}
             </button>
           ) : (
-            <button
-              onClick={() => onPlay(scene)}
-              className="flex h-14 w-full items-center justify-center gap-2.5 rounded-full bg-ink text-lg font-bold text-white shadow-[0_10px_28px_rgba(21,23,26,0.35)] transition active:scale-[0.98]"
-            >
-              <span className="flex h-8 w-8 items-center justify-center rounded-full" style={{ background: 'var(--accent)', color: 'var(--accent-ink)' }}>
-                <PlayIcon className="h-3.5 w-3.5" />
-              </span>
-              Open for {personName}
-            </button>
+            <OpenForButton personName={personName} onClick={() => onPlay(scene)} />
           )}
         </div>
       </div>

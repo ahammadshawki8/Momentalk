@@ -2,6 +2,8 @@ import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { api, type Scene } from '../api'
 import { accentStyle, useMomentColor } from '../color'
 import { FitBox } from '../components/FitBox'
+import { CloseIcon, MicIcon } from '../components/Icons'
+import { momentTitle } from '../components/MomentParts'
 import { SceneCanvas, type HeardPulse } from '../components/SceneCanvas'
 import { useLiveModeling } from '../useLiveModeling'
 
@@ -14,14 +16,18 @@ interface UserModeProps {
 
 const HOLD_MS = 900
 
-/** Press and hold to leave, so a child cannot exit by accident (common guard in AAC apps). */
-function HoldToExit({ onExit }: { onExit: () => void }) {
+/** Close, guarded: a tap only shows the hint, a short hold leaves (so a child cannot exit by accident). */
+function HoldToClose({ onExit }: { onExit: () => void }) {
   const [progress, setProgress] = useState(0)
+  const [hint, setHint] = useState(false)
   const raf = useRef(0)
   const start = useRef(0)
+  const hintTimer = useRef(0)
 
   function begin() {
     start.current = performance.now()
+    setHint(true)
+    window.clearTimeout(hintTimer.current)
     const tick = () => {
       const p = Math.min(1, (performance.now() - start.current) / HOLD_MS)
       setProgress(p)
@@ -37,24 +43,57 @@ function HoldToExit({ onExit }: { onExit: () => void }) {
   function cancel() {
     cancelAnimationFrame(raf.current)
     setProgress(0)
+    hintTimer.current = window.setTimeout(() => setHint(false), 1400)
   }
 
-  useEffect(() => () => cancelAnimationFrame(raf.current), [])
+  useEffect(() => () => {
+    cancelAnimationFrame(raf.current)
+    window.clearTimeout(hintTimer.current)
+  }, [])
 
   return (
-    <button
-      onPointerDown={begin}
-      onPointerUp={cancel}
-      onPointerLeave={cancel}
-      onKeyDown={(e) => e.key === 'Enter' && onExit()}
-      aria-label="Hold to go back to caregiver"
-      className="relative flex h-11 shrink-0 items-center gap-2 whitespace-nowrap rounded-full bg-white/10 pl-1.5 pr-4 text-sm font-bold text-white/80 backdrop-blur"
-    >
-      <span className="relative flex h-8 w-8 items-center justify-center">
+    <div className="relative">
+      <button
+        onPointerDown={begin}
+        onPointerUp={cancel}
+        onPointerLeave={() => progress > 0 && cancel()}
+        onContextMenu={(e) => e.preventDefault()}
+        onKeyDown={(e) => e.key === 'Enter' && onExit()}
+        aria-label="Hold to close"
+        className="relative flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-white/85 backdrop-blur"
+      >
         <span className="hold-ring absolute inset-0 rounded-full text-white" style={{ '--hold': progress } as CSSProperties} aria-hidden="true" />
-        <span className="h-2.5 w-2.5 rounded-sm bg-white/80" />
-      </span>
-      {progress > 0 ? 'Keep holding' : 'Hold to exit'}
+        <CloseIcon />
+      </button>
+      {hint && (
+        <span className="rise pointer-events-none absolute left-0 top-14 z-20 whitespace-nowrap rounded-full bg-white px-3 py-1.5 text-[length:var(--text-caption)] font-bold text-ink shadow-lg">
+          Hold to close
+        </span>
+      )}
+    </div>
+  )
+}
+
+/** Caregiver's Talk control: words they say light up on the moment. */
+function TalkButton({ listening, onToggle, personName }: { listening: boolean; onToggle: () => void; personName: string }) {
+  return (
+    <button
+      onClick={onToggle}
+      aria-pressed={listening}
+      aria-label={listening ? 'Stop listening' : `Talk to ${personName}`}
+      className="flex h-12 shrink-0 items-center gap-2 rounded-full px-4 font-bold transition active:scale-95"
+      style={listening
+        ? { background: 'var(--accent)', color: 'var(--accent-ink)', boxShadow: '0 0 0 6px color-mix(in srgb, var(--accent) 30%, transparent)' }
+        : { background: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.9)' }}
+    >
+      {listening ? (
+        <span className="flex h-5 items-center gap-[3px]" aria-hidden="true">
+          {[0, 1, 2, 3].map((i) => <span key={i} className="eq-bar w-[3px] rounded-full bg-current" style={{ animationDelay: `${i * 120}ms` }} />)}
+        </span>
+      ) : (
+        <MicIcon />
+      )}
+      {listening ? 'Listening' : 'Talk'}
     </button>
   )
 }
@@ -89,18 +128,19 @@ export function UserMode({ scenes, initialSceneId, personName, onExit }: UserMod
         background: `radial-gradient(120% 70% at 50% 0%, color-mix(in srgb, ${color.accent} 24%, #101214), #101214 72%)`,
       }}
     >
-      <header className="pt-safe px-safe flex items-center justify-between gap-3">
-        <HoldToExit
+      {/* Caregiver controls live together at the top; everything below belongs to the person. */}
+      <header className="pt-safe px-safe grid shrink-0 grid-cols-[auto_1fr_auto] items-center gap-3 pb-1">
+        <HoldToClose
           onExit={() => {
             live.stop()
             onExit()
           }}
         />
-        <span className="line-clamp-2 min-w-0 font-toy text-lg font-extrabold leading-tight text-white/90">{current.title}</span>
-        <span className="w-11" aria-hidden="true" />
+        <h1 className="line-clamp-2 min-w-0 text-center font-toy text-lg font-extrabold leading-tight text-white/90">{momentTitle(current)}</h1>
+        <TalkButton listening={listening} personName={personName} onToggle={() => (listening ? live.stop() : void live.start())} />
       </header>
 
-      <main key={current.id} className="swap-in flex min-h-0 flex-1 flex-col gap-4 py-3 landscape:flex-row landscape:items-stretch landscape:gap-4 sm:px-6">
+      <main key={current.id} className="swap-in flex min-h-0 flex-1 flex-col gap-4 pb-1 pt-3 landscape:flex-row landscape:items-stretch landscape:gap-4 sm:px-6">
         <div className="relative min-h-0 px-3 portrait:max-h-[58%] portrait:flex-none portrait:basis-auto landscape:flex-1 sm:px-0" style={{ aspectRatio: `${current.width} / ${current.height}` }}>
           <FitBox aspect={current.width / current.height} align="start">
             <SceneCanvas
@@ -142,35 +182,24 @@ export function UserMode({ scenes, initialSceneId, personName, onExit }: UserMod
         )}
       </main>
 
-      <nav aria-label="Moments" className="px-safe pb-safe flex shrink-0 items-end gap-3">
-        <button
-          onClick={() => (listening ? live.stop() : void live.start())}
-          aria-pressed={listening}
-          aria-label={listening ? 'Stop listening' : `Talk to ${personName}: words you say light up`}
-          className="press relative flex h-[72px] shrink-0 items-center gap-2 rounded-[22px] px-5 font-toy text-xl font-extrabold"
-          style={{ background: 'var(--accent)', color: 'var(--accent-ink)', '--press-shadow': 'color-mix(in srgb, var(--accent) 55%, #000)' } as CSSProperties}
-        >
-          <span className="relative flex h-6 w-6 items-center justify-center">
-            {listening && <span className="listening-ring absolute inset-0 rounded-full border-2 border-current" aria-hidden="true" />}
-            <span className="h-3 w-3 rounded-full bg-current" />
-          </span>
-          {listening ? 'Listening' : 'Talk'}
-        </button>
-        <div className="snap-row -mr-4 flex min-w-0 flex-1 gap-3 overflow-x-auto pb-1.5 pr-4">
-          {approved.map((s) => (
-            <button
-              key={s.id}
-              onClick={() => setCurrentId(s.id)}
-              aria-current={s.id === current.id}
-              aria-label={s.title}
-              className={`press block h-[72px] w-24 shrink-0 overflow-hidden rounded-[20px] border-4 transition ${
-                s.id === current.id ? 'border-white' : 'border-white/25 opacity-75'
-              }`}
-              style={{ '--press-shadow': 'rgba(0,0,0,0.55)' } as CSSProperties}
-            >
-              <img src={s.media_url} alt="" className="h-full w-full object-cover" draggable={false} />
-            </button>
-          ))}
+      <nav aria-label="Moments" className="pb-safe shrink-0 pt-2">
+        <div className="snap-row flex scroll-px-4 gap-2.5 overflow-x-auto px-4 py-2">
+          {approved.map((s) => {
+            const on = s.id === current.id
+            return (
+              <button
+                key={s.id}
+                onClick={() => setCurrentId(s.id)}
+                aria-current={on}
+                aria-label={momentTitle(s)}
+                className={`block h-16 w-16 shrink-0 overflow-hidden rounded-[18px] transition duration-300 active:scale-90 ${
+                  on ? 'ring-[3px] ring-white ring-offset-2 ring-offset-[#101214]' : 'opacity-55'
+                }`}
+              >
+                <img src={s.media_url} alt="" className="h-full w-full object-cover" draggable={false} />
+              </button>
+            )
+          })}
         </div>
       </nav>
       {live.message && live.state !== 'listening' && (

@@ -6,6 +6,11 @@ import { PlayIcon } from './Icons'
 import { SceneCanvas } from './SceneCanvas'
 
 export const wordCount = (scenes: Scene[]) => scenes.reduce((n, s) => n + s.hotspots.length, 0)
+/** Titles as people read them: wish scenes are already marked by their badge. */
+export const momentTitle = (scene: Scene) => {
+  const title = scene.kind === 'wish' ? scene.title.replace(/^Wish:\s*/i, '') : scene.title
+  return title.charAt(0).toUpperCase() + title.slice(1)
+}
 export const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`
 
 const KIND_LABEL: Record<string, string> = { photo: 'Photo', video: 'Video', wish: 'Wish' }
@@ -132,11 +137,33 @@ export function MomentTile({ scene, onOpen }: { scene: Scene; onOpen: (s: Scene)
           <span className="absolute right-2.5 top-2.5 rounded-full bg-white px-2.5 py-1 text-[length:var(--text-caption)] font-bold">Draft</span>
         )}
       </span>
-      <span className="mt-2.5 line-clamp-2 font-bold leading-snug">{scene.kind === 'wish' ? scene.title.replace(/^Wish:\s*/i, '') : scene.title}</span>
+      <span className="mt-2.5 line-clamp-2 font-bold leading-snug">{momentTitle(scene)}</span>
       <span className="mt-0.5 flex items-center gap-1.5 text-[length:var(--text-caption)] text-muted">
         <span className="h-1.5 w-1.5 rounded-full" style={{ background: 'var(--accent)' }} aria-hidden="true" />
         {scene.hotspots.length === 0 ? 'Ready to outline' : plural(scene.hotspots.length, 'word', 'words')}
       </span>
+    </button>
+  )
+}
+
+/** The one handoff action: give the phone to the person. Tactile, warm, the brand yellow. */
+export function OpenForButton({ personName, onClick, disabled, className = '' }: {
+  personName: string
+  onClick: () => void
+  disabled?: boolean
+  className?: string
+}) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className={`press flex h-16 w-full items-center justify-center gap-3 rounded-full bg-brand text-[length:var(--text-title)] font-bold text-ink disabled:opacity-40 ${className}`}
+      style={{ '--press-shadow': '#d39a2a' } as CSSProperties}
+    >
+      <span className="flex h-9 w-9 items-center justify-center rounded-full bg-ink text-brand">
+        <PlayIcon className="ml-0.5 h-4 w-4" />
+      </span>
+      Open for {personName}
     </button>
   )
 }

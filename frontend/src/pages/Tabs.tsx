@@ -1,10 +1,10 @@
 import { useState, type ReactNode } from 'react'
-import type { Health, Scene } from '../api'
-import { SettingsIcon } from '../components/Icons'
+import { api, type Health, type Scene } from '../api'
+import { CheckIcon, SettingsIcon } from '../components/Icons'
 import { Logo } from '../components/Logo'
-import { MomentTile, plural, WordCard } from '../components/MomentParts'
+import { MomentTile, momentTitle, OpenForButton, plural, WordCard } from '../components/MomentParts'
 import { TodayCard } from '../components/TodayCard'
-import { WorldHero } from '../components/WorldHero'
+import { Mascot, WorldHero } from '../components/WorldHero'
 
 interface PageProps {
   scenes: Scene[]
@@ -78,14 +78,7 @@ export function HomePage({ scenes, personName, onOpen, onPlay, onSettings, onSee
         Welcome to {personName}'s world
       </h1>
 
-      <button
-        onClick={onPlay}
-        disabled={approved.length === 0}
-        className="rise mt-8 flex h-14 w-full items-center justify-center gap-3 rounded-full bg-ink text-[length:var(--text-body)] font-bold text-white active:scale-[0.98] disabled:opacity-40"
-      >
-        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand text-ink">{personName[0]}</span>
-        Open for {personName}
-      </button>
+      <OpenForButton personName={personName} onClick={onPlay} disabled={approved.length === 0} className="rise mt-8" />
 
       {approved.length > 0 && (
         <Section title="Recent" action={<button onClick={onSeeAll} className="font-bold text-muted active:opacity-60">See all</button>}>
@@ -206,17 +199,61 @@ export function TodayPage({ scenes, personName, onOpen, health, onScenesChanged 
 }) {
   const drafts = scenes.filter((s) => s.status === 'draft')
   return (
-    <Page title="Today">
+    <Page eyebrow={dateLine()} title="Today">
       <TodayCard personName={personName} apiReady={!!health?.api_key} onDraftsReady={onScenesChanged} />
-      <Section title="Drafts">
+      <Section title="To review" action={drafts.length > 0 ? <span className="text-[length:var(--text-caption)] font-bold text-faint">{drafts.length}</span> : undefined}>
         {drafts.length === 0 ? (
-          <p className="text-muted">All caught up.</p>
+          <div className="flex flex-col items-center py-6 text-center">
+            <Mascot className="h-20 w-20" />
+            <p className="mt-3 font-bold">All caught up</p>
+          </div>
         ) : (
-          <div className="grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3">
-            {drafts.map((s) => <MomentTile key={s.id} scene={s} onOpen={onOpen} />)}
+          <div className="flex flex-col gap-4">
+            {drafts.map((s) => <ReviewCard key={s.id} scene={s} personName={personName} onOpen={onOpen} onChanged={onScenesChanged} />)}
           </div>
         )}
       </Section>
     </Page>
+  )
+}
+
+const dateLine = () => new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })
+
+/** A draft from Moment Builder: look at it, or approve it right here. */
+function ReviewCard({ scene, personName, onOpen, onChanged }: {
+  scene: Scene
+  personName: string
+  onOpen: (s: Scene) => void
+  onChanged: () => Promise<void>
+}) {
+  const [busy, setBusy] = useState(false)
+  return (
+    <article className="overflow-hidden rounded-[24px] border border-line bg-white">
+      <button onClick={() => onOpen(scene)} className="block w-full text-left active:opacity-80">
+        <img src={scene.media_url} alt="" className="aspect-[16/10] w-full object-cover" draggable={false} />
+        <span className="block px-5 pt-4">
+          <span className="block text-[length:var(--text-title)] font-bold leading-snug">{momentTitle(scene)}</span>
+          <span className="mt-0.5 block text-[length:var(--text-caption)] text-muted">{plural(scene.hotspots.length, 'word', 'words')}</span>
+        </span>
+      </button>
+      <div className="flex gap-2 p-5 pt-4">
+        <button onClick={() => onOpen(scene)} className="h-12 flex-1 rounded-full bg-canvas font-bold active:scale-[0.98]">Look</button>
+        <button
+          disabled={busy}
+          onClick={async () => {
+            setBusy(true)
+            try {
+              await api.approve(scene.id)
+              await onChanged()
+            } finally {
+              setBusy(false)
+            }
+          }}
+          className="flex h-12 flex-[1.4] items-center justify-center gap-1.5 rounded-full bg-ink font-bold text-white active:scale-[0.98] disabled:opacity-50"
+        >
+          <CheckIcon className="h-4 w-4" /> Approve for {personName}
+        </button>
+      </div>
+    </article>
   )
 }
