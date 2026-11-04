@@ -39,3 +39,7 @@ frontend/public/_mocks/
 
 # Deploy bundle (built by deploy/deploy_space.py)
 deploy/space/
+
+# Submission drafts (video script, form answers), kept local
+submission/
+.playwright-mcp/
