@@ -5,6 +5,7 @@ import { SettingsSheet } from './components/SettingsSheet'
 import { TabBar } from './components/TabBar'
 import { loadLocalPrefs, resetLocalPrefs, saveLocalPrefs, type LocalPrefs } from './localPrefs'
 import { Building } from './pages/Building'
+import { Camera } from './pages/Camera'
 import { Moment } from './pages/Moment'
 import { Onboarding } from './pages/Onboarding'
 import { HomePage, MomentsPage, TodayPage, WordsPage } from './pages/Tabs'
@@ -23,7 +24,6 @@ export default function App() {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [revealId, setRevealId] = useState<string | null>(null)
   const [local, setLocal] = useState<LocalPrefs>(loadLocalPrefs)
-  const fileInput = useRef<HTMLInputElement>(null)
 
   const PERSON_NAME = local.personName
   const LANGUAGE = local.language
@@ -98,7 +98,8 @@ export default function App() {
     setPendingPhoto(URL.createObjectURL(file))
     setPendingIsVideo(isVideo)
     setJob(null)
-    navigate({ name: 'building' })
+    // Replace the camera page, so back from the build goes home rather than into the camera again.
+    navigate({ name: 'building' }, { replace: true })
     try {
       const opts = { language: LANGUAGE, personName: PERSON_NAME }
       setJob(await (isVideo ? api.createVideoScene(file, opts) : api.createPhotoScene(file, opts)))
@@ -123,28 +124,13 @@ export default function App() {
   const play = (id?: string) => navigate({ name: 'play', id })
   const shareWithServer = !!health && !health.public
 
-  /* The file input stays mounted on every page so "Snap" works inside the same tap gesture. */
-  const picker = (
-    <input
-      ref={fileInput}
-      type="file"
-      accept="image/*,video/*"
-      capture="environment"
-      className="hidden"
-      onChange={(e) => {
-        const file = e.target.files?.[0]
-        if (file) void handlePhoto(file)
-        e.target.value = ''
-      }}
-    />
-  )
+  const openCamera = () => navigate({ name: 'camera' })
 
   if (!local.onboarded) {
     const sample = [...scenes].filter((s) => s.status === 'approved' && s.kind === 'photo')
       .sort((a, b) => b.hotspots.length - a.hotspots.length)[0]
     return (
       <>
-        {picker}
         <Onboarding
           initial={local}
           sample={sample}
@@ -157,7 +143,7 @@ export default function App() {
               void api.updatePrefs({ person_name: next.personName, language: next.language }).then(setPrefs).catch(() => undefined)
             }
             navigate({ name: 'tab', tab: 'home' }, { replace: true })
-            if (choice === 'snap') fileInput.current?.click()
+            if (choice === 'snap') openCamera()
           }}
         />
       </>
@@ -165,7 +151,9 @@ export default function App() {
   }
 
   let page
-  if (route.name === 'play') {
+  if (route.name === 'camera') {
+    page = <Camera onCapture={(file) => void handlePhoto(file)} onClose={() => back()} />
+  } else if (route.name === 'play') {
     page = <UserMode scenes={scenes} initialSceneId={route.id} personName={PERSON_NAME} onExit={() => back()} />
   } else if (route.name === 'building' && pendingPhoto) {
     page = <Building photoUrl={pendingPhoto} isVideo={pendingIsVideo} job={job} personName={PERSON_NAME} onCancel={() => back()} />
@@ -193,7 +181,7 @@ export default function App() {
       />
     )
   }
-  if (page) return <>{picker}{page}</>
+  if (page) return page
 
   /* Tab pages. */
   const tab = route.name === 'tab' ? route.tab : 'home'
@@ -203,7 +191,6 @@ export default function App() {
 
   return (
     <>
-      {picker}
       {tab === 'home' && (
         <HomePage {...common} health={health} onPlay={() => play()} onSettings={() => setSettingsOpen(true)} onSeeAll={() => goTab('moments')} />
       )}
@@ -211,7 +198,7 @@ export default function App() {
       {tab === 'words' && <WordsPage {...common} />}
       {tab === 'today' && <TodayPage {...common} health={health} onScenesChanged={refresh} />}
 
-      <TabBar current={tab} todayBadge={drafts} onTab={goTab} onSnap={() => fileInput.current?.click()} />
+      <TabBar current={tab} todayBadge={drafts} onTab={goTab} onSnap={openCamera} />
 
       {settingsOpen && (
         <SettingsSheet

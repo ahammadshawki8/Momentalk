@@ -379,6 +379,16 @@ body {
   }
 }
 
+/* Camera shutter: a quick white flash, like a real camera. */
+.camera-flash {
+  animation: camera-flash 320ms ease-out forwards;
+}
+
+@keyframes camera-flash {
+  from { opacity: 0.85; }
+  to { opacity: 0; }
+}
+
 /* Talk button while listening: a small live level meter. */
 .eq-bar {
   height: 40%;

@@ -8,6 +8,7 @@ export type Route =
   | { name: 'moment'; id: string; reveal?: boolean }
   | { name: 'play'; id?: string }
   | { name: 'building' }
+  | { name: 'camera' }
 
 const TABS: Tab[] = ['home', 'moments', 'words', 'today']
 
@@ -16,6 +17,7 @@ export function parseHash(hash: string): Route {
   if (parts[0] === 'moment' && parts[1]) return { name: 'moment', id: decodeURIComponent(parts[1]) }
   if (parts[0] === 'play') return { name: 'play', id: parts[1] ? decodeURIComponent(parts[1]) : undefined }
   if (parts[0] === 'building') return { name: 'building' }
+  if (parts[0] === 'camera') return { name: 'camera' }
   const tab = (parts[0] ?? 'home') as Tab
   return { name: 'tab', tab: TABS.includes(tab) ? tab : 'home' }
 }
@@ -30,6 +32,8 @@ export function routeToHash(route: Route): string {
       return route.id ? `#/play/${encodeURIComponent(route.id)}` : '#/play'
     case 'building':
       return '#/building'
+    case 'camera':
+      return '#/camera'
   }
 }
 
