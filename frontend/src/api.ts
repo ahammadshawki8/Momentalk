@@ -144,6 +144,7 @@ export const api = {
     files.forEach((f) => form.append('photos', f))
     return request<InboxItem[]>('/api/inbox', { method: 'POST', body: form })
   },
+  resetProfile: () => request<{ ok: boolean; removed_moments: number }>('/api/profile/reset', { method: 'POST' }),
   makeAvatar: (traits: AvatarTraits) => request<Job>('/api/avatar', json('POST', traits)),
   makeWish: (sceneId: string, body: { activity: string; person_name: string; language: string; avatar_id?: string }) =>
     request<Job>(`/api/scenes/${sceneId}/wish`, json('POST', body)),

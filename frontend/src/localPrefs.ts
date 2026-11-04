@@ -25,6 +25,16 @@ export function loadLocalPrefs(): LocalPrefs {
   }
 }
 
+/** Forget this device's profile (after the server side is deleted) and start fresh. */
+export function resetLocalPrefs(): LocalPrefs {
+  try {
+    window.localStorage.removeItem(KEY)
+  } catch {
+    /* storage blocked: nothing stored to remove */
+  }
+  return { ...DEFAULTS, avatar: { traits: { ...DEFAULTS.avatar.traits } } }
+}
+
 export function saveLocalPrefs(prefs: LocalPrefs): void {
   try {
     window.localStorage.setItem(KEY, JSON.stringify(prefs))

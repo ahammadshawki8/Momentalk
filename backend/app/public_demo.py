@@ -26,10 +26,20 @@ _hits: dict[str, deque[float]] = defaultdict(deque)
 
 
 def bootstrap_data() -> None:
-    """Copy the bundled demo moments into an empty data folder (fresh container)."""
+    """Copy the bundled demo into an empty data folder (fresh container).
+
+    In the public demo the sample moments are read only, so the bundled copies are always laid back
+    on top: a redeploy with a newer seed updates them even when Postgres restored older ones.
+    """
+    if not SEED_DIR.exists():
+        return
     scenes = settings.data_dir / "scenes"
-    if SEED_DIR.exists() and not any(scenes.glob("*/scene.json")):
+    if not any(scenes.glob("*/scene.json")):
         shutil.copytree(SEED_DIR, settings.data_dir, dirs_exist_ok=True)
+    elif PUBLIC:
+        for part in ("scenes", "audio", "inbox"):
+            if (SEED_DIR / part).exists():
+                shutil.copytree(SEED_DIR / part, settings.data_dir / part, dirs_exist_ok=True)
 
 
 def client_ip(request: Request) -> str:

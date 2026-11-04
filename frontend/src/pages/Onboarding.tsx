@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState, type CSSProperties, type ReactNode } from 'react'
 import type { Scene } from '../api'
 import { AvatarFace, HAIR, OUTFIT, SKIN, STYLES, type AvatarTraits } from '../components/Avatar'
 import { Logo } from '../components/Logo'
@@ -35,6 +35,15 @@ export function Onboarding({ initial, sample, avatarUrl, avatarDrawing, onAvatar
   const [language, setLanguage] = useState(initial.language)
   const [traits, setTraits] = useState<AvatarTraits>(initial.avatar.traits)
   const index = STEPS.indexOf(step)
+  // The ready screen waits for Muse Image, with an escape if it is unusually slow.
+  const [gaveUp, setGaveUp] = useState(false)
+  const [slow, setSlow] = useState(false)
+  const waiting = step === 'ready' && avatarDrawing && !avatarUrl && !gaveUp
+  useEffect(() => {
+    if (!waiting) return
+    const timer = window.setTimeout(() => setSlow(true), 45000)
+    return () => window.clearTimeout(timer)
+  }, [waiting])
   const person = name.trim() || 'them'
 
   const go = (to: number) => {
@@ -76,7 +85,7 @@ export function Onboarding({ initial, sample, avatarUrl, avatarDrawing, onAvatar
                 <SceneCanvas scene={sample} mode="speak" reveal ambient labels={false} rounded="rounded-[28px]" />
               </div>
             )}
-            <div className="pt-8">
+            <div className="pt-8 text-center">
               <h1 className={heading}>Every moment has a story.</h1>
               <p className="mt-3 text-[length:var(--text-body)] leading-relaxed text-muted">
                 Momentalk turns everyday photos into a voice for people who cannot rely on speech.
@@ -177,28 +186,44 @@ export function Onboarding({ initial, sample, avatarUrl, avatarDrawing, onAvatar
         {step === 'ready' && (
           <div className="stagger flex flex-1 flex-col items-center justify-center pb-8 text-center">
             <span className="relative">
-              <span className="ready-ring absolute inset-0 rounded-[40px] bg-brand/40" aria-hidden="true" />
+              {!waiting && <span className="ready-ring absolute inset-0 rounded-[40px] bg-brand/40" aria-hidden="true" />}
               <span className="avatar-pop relative flex h-48 w-48 items-center justify-center overflow-hidden rounded-[40px] bg-white shadow-[0_24px_60px_rgba(20,20,20,0.14)]">
                 {avatarUrl
                   ? <img key={avatarUrl} src={avatarUrl} alt={`${person}'s avatar`} className="avatar-pop h-full w-full object-cover" />
-                  : <AvatarFace traits={traits} className="mt-6 h-44 w-44" />}
+                  : <AvatarFace traits={traits} className={`mt-6 h-44 w-44 transition duration-700 ${waiting ? 'opacity-60 blur-[1px]' : ''}`} />}
+                {waiting && <span className="scan absolute inset-0" style={{ '--accent': '#ffc24b' } as CSSProperties} aria-hidden="true" />}
               </span>
             </span>
-            {avatarDrawing && !avatarUrl && (
-              <span className="mt-4 flex items-center gap-2 rounded-full border border-line bg-white px-3 py-1.5 text-[length:var(--text-caption)] font-bold text-muted">
-                <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-ink/20 border-t-ink" aria-hidden="true" />
-                Drawing {person}
-              </span>
+            {waiting ? (
+              <div key="waiting" className="rise" aria-live="polite">
+                <h1 className={`${heading} mt-8`}>Drawing {person}</h1>
+                <p className="mt-3 text-[length:var(--text-body)] text-muted">Muse Image is painting {person} for wishes.</p>
+                <DrawingClock />
+              </div>
+            ) : (
+              <div key="ready" className="rise">
+                <h1 className={`${heading} mt-8`}>{person}'s world is ready.</h1>
+                <p className="mt-3 text-[length:var(--text-body)] leading-relaxed text-muted">Start with the sample moments, or snap the first real one now.</p>
+              </div>
             )}
-            <h1 className={`${heading} mt-8`}>{person}'s world is ready.</h1>
-            <p className="mt-3 text-[length:var(--text-body)] leading-relaxed text-muted">Start with the sample moments, or snap the first real one now.</p>
           </div>
         )}
       </main>
 
       <footer className="px-safe pb-safe mx-auto w-full max-w-md px-6 pt-4">
-        {step === 'ready' ? (
-          <div className="flex flex-col gap-3">
+        {step === 'ready' && waiting ? (
+          <div className="flex h-[124px] flex-col items-center justify-center gap-3">
+            <span className="relative h-1.5 w-48 overflow-hidden rounded-full bg-line" aria-hidden="true">
+              <span className="progress-indeterminate absolute inset-0" />
+            </span>
+            {slow && (
+              <button onClick={() => setGaveUp(true)} className="h-11 rounded-full px-4 font-bold text-muted active:bg-white">
+                Continue without the drawing
+              </button>
+            )}
+          </div>
+        ) : step === 'ready' ? (
+          <div className="rise flex flex-col gap-3">
             <button onClick={() => finish('snap')} className="h-14 rounded-full bg-ink text-[length:var(--text-body)] font-bold text-white active:scale-[0.98]">
               Snap the first moment
             </button>
@@ -244,4 +269,14 @@ function Chip({ on, onClick, children }: { on: boolean; onClick: () => void; chi
       {children}
     </button>
   )
+}
+
+function DrawingClock() {
+  const [seconds, setSeconds] = useState(0)
+  useEffect(() => {
+    const started = Date.now()
+    const timer = window.setInterval(() => setSeconds(Math.floor((Date.now() - started) / 1000)), 500)
+    return () => window.clearInterval(timer)
+  }, [])
+  return <p className="mt-4 font-bold tabular-nums text-muted">{Math.floor(seconds / 60)}:{String(seconds % 60).padStart(2, '0')}</p>
 }

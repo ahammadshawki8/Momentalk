@@ -3,11 +3,17 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
+import os
+import shutil
 import time
+from pathlib import Path
 from typing import Any
 
-import os
-from pathlib import Path
+from . import persist
+
+# Before anything reads the data folder (the cost ledger loads at import), bring it back from Postgres.
+persist.restore_safely()
 
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
@@ -24,7 +30,21 @@ from .pipelines import video as video_pipeline
 from .pipelines import wish as wish_pipeline
 
 public_demo.bootstrap_data()
-app = FastAPI(title="Momentalk API")
+
+
+@contextlib.asynccontextmanager
+async def lifespan(_app: FastAPI):
+    task = None
+    if persist.enabled():
+        await asyncio.to_thread(persist.sync_once)  # first upload (a fresh database gets the demo)
+        task = asyncio.create_task(persist.run_forever())
+    yield
+    if task:
+        task.cancel()
+        await asyncio.to_thread(persist.sync_once)  # flush the last changes before the container stops
+
+
+app = FastAPI(title="Momentalk API", lifespan=lifespan)
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 app.mount("/media", StaticFiles(directory=settings.data_dir), name="media")
 
@@ -73,6 +93,24 @@ def health() -> dict:
         "language_model": meta_client.language_model(),
         "cost": meta_client.ledger.summary(),
     }
+
+
+@app.post("/api/profile/reset")
+def reset_profile() -> dict:
+    """Delete everything the person's profile made: their moments, drafts, avatar and uploads.
+
+    Sample moments (flagged demo) always stay, so the live demo keeps working for everyone.
+    """
+    removed = 0
+    for scene in store.list_scenes():
+        if not scene.get("demo"):
+            store.delete_scene(scene["id"])
+            removed += 1
+    shutil.rmtree(avatar_pipeline.AVATAR_DIR, ignore_errors=True)
+    for photo in agent.INBOX.glob("*"):
+        if photo.is_file() and not photo.stem.startswith("m_demo"):
+            photo.unlink()
+    return {"ok": True, "removed_moments": removed}
 
 
 @app.get("/api/prefs")

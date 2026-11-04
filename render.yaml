@@ -1,4 +1,6 @@
 # Render Blueprint: free Docker web service for the Momentalk live demo.
+# The free Postgres is created separately in the Render dashboard; paste its Internal Database URL
+# into DATABASE_URL so moments survive restarts (see backend/app/persist.py).
 services:
   - type: web
     name: momentalk
@@ -11,4 +13,6 @@ services:
       - key: MODEL_API_KEY
         sync: false
       - key: OPEN_WEIGHTS_API_KEY
+        sync: false
+      - key: DATABASE_URL
         sync: false

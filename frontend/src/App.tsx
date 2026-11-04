@@ -3,7 +3,7 @@ import { api, type Health, type Job, type Prefs, type Scene } from './api'
 import type { AvatarTraits } from './components/Avatar'
 import { SettingsSheet } from './components/SettingsSheet'
 import { TabBar } from './components/TabBar'
-import { loadLocalPrefs, saveLocalPrefs, type LocalPrefs } from './localPrefs'
+import { loadLocalPrefs, resetLocalPrefs, saveLocalPrefs, type LocalPrefs } from './localPrefs'
 import { Building } from './pages/Building'
 import { Moment } from './pages/Moment'
 import { Onboarding } from './pages/Onboarding'
@@ -226,9 +226,14 @@ export default function App() {
             if (nextPrefs) setPrefs(nextPrefs)
             void api.health().then(setHealth)
           }}
-          onRestartOnboarding={() => {
+          onDeleteProfile={async () => {
+            await api.resetProfile()
+            avatarRequest.current = ''
+            setAvatarDrawing(false)
+            setLocal(resetLocalPrefs())
+            await refresh()
             setSettingsOpen(false)
-            updateLocal((p) => ({ ...p, onboarded: false }))
+            navigate({ name: 'tab', tab: 'home' }, { replace: true })
           }}
         />
       )}
