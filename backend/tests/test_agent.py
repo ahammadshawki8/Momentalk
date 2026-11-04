@@ -62,3 +62,18 @@ def test_moment_builder_builds_drafts_and_finishes(tmp_path, monkeypatch):
     # Every tool call got a matching tool result message back to the model.
     last = seen_messages[-1]
     assert {m["tool_call_id"] for m in last if m.get("role") == "tool"} >= {"c1", "c2", "c3", "c4", "c5"}
+
+
+def test_inbox_lists_photos_and_videos_and_refuses_bad_ids(tmp_path, monkeypatch):
+    from app import agent, store
+
+    monkeypatch.setattr(agent, "INBOX", tmp_path)
+    monkeypatch.setattr(store, "SCENES_DIR", tmp_path / "scenes")
+    (tmp_path / "m_aaa.jpg").write_bytes(b"jpg")
+    (tmp_path / "m_bbb.mov").write_bytes(b"mov")
+    (tmp_path / "notes.txt").write_text("ignored")
+    items = {m["media_id"]: m["kind"] for m in agent.list_media()}
+    assert items == {"m_aaa": "photo", "m_bbb": "video"}
+    assert agent.media_path("m_bbb").name == "m_bbb.mov"
+    assert agent.media_path("../secret") is None
+    assert agent.media_path("m_missing") is None

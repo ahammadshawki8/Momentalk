@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { api, type InboxItem, type Job } from '../api'
-import { CheckIcon, SparkIcon } from './Icons'
+import { CheckIcon, PlayIcon, SparkIcon } from './Icons'
 
 const STEP_TEXT: Record<string, (detail?: string) => string> = {
   list_todays_media: () => "Looked through today's photos",
@@ -49,49 +49,73 @@ export function TodayCard({ apiReady, onDraftsReady }: TodayCardProps) {
   const steps = (job?.stages ?? []).filter((s) => s.stage === 'agent_step')
   const running = job?.status === 'running'
   const done = job?.status === 'done'
+  const [adding, setAdding] = useState(false)
+  // Gallery upload for the day: photos and short videos, several at once (the camera button is for one moment now).
   const picker = (
     <input
       ref={input}
       type="file"
-      accept="image/*"
+      accept="image/*,video/*"
       multiple
       className="hidden"
       onChange={async (e) => {
         const files = [...(e.target.files ?? [])]
         e.target.value = ''
-        if (files.length) setInbox(await api.addToInbox(files))
+        if (!files.length) return
+        setAdding(true)
+        setError(null)
+        try {
+          setInbox(await api.addToInbox(files))
+        } catch (err) {
+          setError(err instanceof Error ? err.message : String(err))
+        } finally {
+          setAdding(false)
+        }
       }}
     />
   )
+  const spinner = <span className="h-5 w-5 animate-spin rounded-full border-2 border-ink/20 border-t-ink" aria-hidden="true" />
 
   if (inbox.length === 0 && !job) {
     return (
       <>
         {picker}
-        <button onClick={() => input.current?.click()}
+        <button onClick={() => input.current?.click()} disabled={adding}
                 className="rise mt-8 flex w-full flex-col items-center rounded-[28px] border-2 border-dashed border-line px-6 py-10 text-center active:bg-white">
-          <span className="flex h-14 w-14 items-center justify-center rounded-full bg-white text-3xl font-bold shadow-[0_6px_20px_rgba(20,20,20,0.08)]">+</span>
-          <span className="mt-4 text-[length:var(--text-title)] font-bold">Add today's photos</span>
+          <span className="flex h-14 w-14 items-center justify-center rounded-full bg-white text-3xl font-bold shadow-[0_6px_20px_rgba(20,20,20,0.08)]">
+            {adding ? spinner : '+'}
+          </span>
+          <span className="mt-4 text-[length:var(--text-title)] font-bold">{adding ? 'Adding' : "Add today's photos and videos"}</span>
         </button>
+        {error && <p className="mt-3 text-center text-[length:var(--text-caption)] text-danger">{error}</p>}
       </>
     )
   }
 
   const stack = inbox.slice(0, 3)
+  const videos = inbox.filter((m) => m.kind === 'video').length
+  const photos = inbox.length - videos
+  const counted = [photos && `${photos} ${photos === 1 ? 'photo' : 'photos'}`, videos && `${videos} ${videos === 1 ? 'video' : 'videos'}`]
+    .filter(Boolean).join(' and ')
 
   return (
     <section className="rise mt-8 overflow-hidden rounded-[28px] border border-line bg-white" aria-live="polite">
       {picker}
       <div className="relative flex h-56 items-center justify-center overflow-hidden bg-canvas">
         {stack.map((m, i) => (
-          <img
+          <span
             key={m.media_id}
-            src={m.url}
-            alt=""
-            className={`absolute h-40 w-32 rounded-[18px] border-4 border-white object-cover shadow-[0_14px_32px_rgba(20,20,20,0.18)] ${
+            className={`absolute h-40 w-32 overflow-hidden rounded-[18px] border-4 border-white bg-stage shadow-[0_14px_32px_rgba(20,20,20,0.18)] ${
               FAN[stack.length][i]
             } ${running ? 'animate-pulse' : ''}`}
-          />
+          >
+            <img src={m.url} alt="" className="h-full w-full object-cover" />
+            {m.kind === 'video' && (
+              <span className="absolute bottom-1.5 left-1.5 flex h-7 w-7 items-center justify-center rounded-full bg-black/55 text-white" aria-label="Video">
+                <PlayIcon className="ml-0.5 h-3 w-3" />
+              </span>
+            )}
+          </span>
         ))}
         {running && <span className="scan pointer-events-none absolute inset-0" style={{ '--accent': '#ffc24b' } as CSSProperties} aria-hidden="true" />}
         {inbox.length > 3 && (
@@ -101,7 +125,7 @@ export function TodayCard({ apiReady, onDraftsReady }: TodayCardProps) {
 
       <div className="p-5">
         <h2 className="text-[length:var(--text-headline)] font-bold leading-tight">
-          {running ? 'Making moments' : done ? 'Drafts are ready' : `${inbox.length} photos from today`}
+          {running ? 'Making moments' : done ? 'Drafts are ready' : `${counted} from today`}
         </h2>
 
         {!running && !done && (
@@ -120,8 +144,8 @@ export function TodayCard({ apiReady, onDraftsReady }: TodayCardProps) {
             >
               <SparkIcon /> Make moments
             </button>
-            <button onClick={() => input.current?.click()} aria-label="Add more photos"
-                    className="flex h-14 w-14 items-center justify-center rounded-full bg-canvas text-2xl font-bold active:scale-95">+</button>
+            <button onClick={() => input.current?.click()} aria-label="Add more photos and videos" disabled={adding}
+                    className="flex h-14 w-14 items-center justify-center rounded-full bg-canvas text-2xl font-bold active:scale-95">{adding ? spinner : '+'}</button>
           </div>
         )}
 

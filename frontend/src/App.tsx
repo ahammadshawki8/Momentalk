@@ -131,7 +131,8 @@ export default function App() {
     <input
       ref={fileInput}
       type="file"
-      accept="image/*,video/mp4,video/quicktime"
+      accept="image/*,video/*"
+      capture="environment"
       className="hidden"
       onChange={(e) => {
         const file = e.target.files?.[0]

@@ -65,6 +65,13 @@ def normalize_clip(src: Path, dst: Path, keyframe: Path) -> dict[str, Any]:
     return probe(dst)
 
 
+def poster_frame(src: Path, dst: Path) -> None:
+    """One still from early in the clip, used to show and describe an inbox video."""
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    subprocess.run([_ffmpeg(), "-y", "-loglevel", "error", "-ss", "0.5", "-i", str(src), "-frames:v", "1",
+                    "-vf", f"scale={TARGET_WIDTH}:-2", "-q:v", "3", str(dst)], check=True)
+
+
 def sample_frames(clip: Path, duration: float, folder: Path, count: int = 3) -> list[Path]:
     """Frames from start, middle and end so the model sees things that appear later (the ball)."""
     ff = _ffmpeg()

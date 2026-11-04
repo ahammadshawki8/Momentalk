@@ -9,16 +9,21 @@ approves it (verifiable agent pattern). The full trace is kept so the caregiver 
 from __future__ import annotations
 
 import json
+import re
 import time
+from pathlib import Path
 from collections import Counter
 from typing import Any, Awaitable, Callable
 
 from . import meta_client, store
 from .config import settings
 from .pipelines.scene import build_photo_scene, prepare_image
+from .pipelines.video import build_video_scene
 
 INBOX = settings.data_dir / "inbox"
 INBOX.mkdir(parents=True, exist_ok=True)
+POSTERS = INBOX / "posters"  # one still per inbox video, for the stack and for look_at_media
+VIDEO_EXT = {".mp4", ".mov", ".m4v", ".webm"}
 RUNS_DIR = settings.data_dir / "agent_runs"
 MAX_STEPS = 14
 MAX_SCENES = 3
@@ -28,11 +33,11 @@ Progress = Callable[[str, dict], Awaitable[None]]
 TOOLS = [
     {"type": "function", "function": {
         "name": "list_todays_media",
-        "description": "List photos captured today that are not yet moments.",
+        "description": "List photos and short videos captured today that are not yet moments. Each item has a kind: photo or video.",
         "parameters": {"type": "object", "properties": {}, "required": []}}},
     {"type": "function", "function": {
         "name": "look_at_media",
-        "description": "Get a short description of one photo: who and what is in it, and how clear it is.",
+        "description": "Get a short description of one photo or video: who and what is in it, and how clear it is.",
         "parameters": {"type": "object", "properties": {"media_id": {"type": "string"}}, "required": ["media_id"]}}},
     {"type": "function", "function": {
         "name": "get_tap_stats",
@@ -40,7 +45,7 @@ TOOLS = [
         "parameters": {"type": "object", "properties": {}, "required": []}}},
     {"type": "function", "function": {
         "name": "build_draft_moment",
-        "description": "Turn one photo into a draft talking moment that waits for caregiver approval.",
+        "description": "Turn one photo or video into a draft talking moment that waits for caregiver approval. Videos become moments whose outlines follow people and pets as they move.",
         "parameters": {"type": "object", "properties": {
             "media_id": {"type": "string"},
             "title": {"type": "string", "description": "2 to 4 word title"},
@@ -58,19 +63,36 @@ TOOLS = [
 def system_prompt(person_name: str) -> str:
     return (
         f"You are Moment Builder inside Momentalk, a communication app for {person_name}, who cannot rely on speech. "
-        "Each evening you review the photos the family captured today. "
-        f"Pick at most {MAX_SCENES} photos that show clear, meaningful moments {person_name} would want to talk about: "
+        "Each evening you review the photos and short videos the family captured today. "
+        f"Pick at most {MAX_SCENES} items that show clear, meaningful moments {person_name} would want to talk about: "
         "people they love, food, play, outings. Skip blurry, empty, or duplicate photos. "
-        "Look at each photo exactly once before deciding; never look at the same photo twice. "
+        "Look at each item exactly once before deciding; never look at the same item twice. "
+        "A video is worth it when a person or pet moves in it; build at most one video per evening. "
         "Toys, pets and objects a child plays with count as meaningful too. "
         "Check tap stats so you can suggest words to model. "
         "Build drafts only; a caregiver approves everything. Always end by calling finish."
     )
 
 
+def media_kind(path: Path) -> str | None:
+    suffix = path.suffix.lower()
+    return "photo" if suffix == ".jpg" else "video" if suffix in VIDEO_EXT else None
+
+
+def media_path(media_id: str) -> Path | None:
+    """The inbox file for an id, refusing anything that is not a plain inbox id."""
+    if not re.fullmatch(r"m_[0-9a-z_]+", media_id or ""):
+        return None
+    for path in INBOX.glob(f"{media_id}.*"):
+        if path.is_file() and media_kind(path):
+            return path
+    return None
+
+
 def list_media() -> list[dict[str, Any]]:
     used = {s.get("source_media") for s in store.list_scenes()}
-    return [{"media_id": p.stem, "file": p.name} for p in sorted(INBOX.glob("*.jpg")) if p.stem not in used]
+    return [{"media_id": p.stem, "file": p.name, "kind": media_kind(p)}
+            for p in sorted(INBOX.iterdir()) if p.is_file() and media_kind(p) and p.stem not in used]
 
 
 def tap_stats() -> dict[str, Any]:
@@ -87,12 +109,19 @@ def tap_stats() -> dict[str, Any]:
 
 
 async def describe(media_id: str) -> str:
-    path = INBOX / f"{media_id}.jpg"
-    if not path.exists():
-        return "No such photo."
-    image, _, _ = prepare_image(path.read_bytes())
+    path = media_path(media_id)
+    if not path:
+        return "No such photo or video."
+    video = media_kind(path) == "video"
+    still = POSTERS / f"{path.stem}.jpg" if video else path
+    if not still.exists():
+        return "This video could not be read."
+    image, _, _ = prepare_image(still.read_bytes())
+    question = ("This is a frame from a short video. In 2 sentences: who and what is in it, and is a person or pet "
+                "moving that the outlines could follow?" if video else
+                "In 2 sentences: who and what is in this photo, and is it clear enough to tap things in it?")
     data = await meta_client.chat([{"role": "user", "content": [
-        {"type": "text", "text": "In 2 sentences: who and what is in this photo, and is it clear enough to tap things in it?"},
+        {"type": "text", "text": question},
         {"type": "image_url", "image_url": {"url": meta_client.image_data_url(image)}},
     ]}], max_tokens=900, reasoning_effort="minimal")
     return meta_client.clean_text(data["choices"][0]["message"]["content"])
@@ -131,11 +160,15 @@ async def run_moment_builder(person_name: str = "Raya", progress: Progress | Non
             elif name == "get_tap_stats":
                 result = tap_stats()
             elif name == "build_draft_moment" and len(run["drafts"]) < MAX_SCENES:
-                path = INBOX / f"{args.get('media_id', '')}.jpg"
-                if not path.exists():
+                path = media_path(args.get("media_id", ""))
+                if not path:
                     result = {"error": "unknown media_id"}
                 else:
-                    scene = await build_photo_scene(path.read_bytes(), person_name=person_name, created_by="agent")
+                    if media_kind(path) == "video":
+                        scene = await build_video_scene(path.read_bytes(), path.name, person_name=person_name,
+                                                        created_by="agent")
+                    else:
+                        scene = await build_photo_scene(path.read_bytes(), person_name=person_name, created_by="agent")
                     scene.update({"title": args.get("title") or scene["title"], "agent_note": args.get("reason"),
                                   "source_media": path.stem, "agent_run": run["id"]})
                     store.save_scene(scene)

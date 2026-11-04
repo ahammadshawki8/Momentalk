@@ -108,9 +108,10 @@ def reset_profile() -> dict:
     for drawing in avatar_pipeline.AVATAR_DIR.glob("*"):
         if drawing.is_file() and not drawing.name.startswith(avatar_pipeline.SEED_PREFIX):
             drawing.unlink()
-    for photo in agent.INBOX.glob("*"):
-        if photo.is_file() and not photo.stem.startswith("m_demo"):
-            photo.unlink()
+    for folder in (agent.INBOX, agent.POSTERS):
+        for item in folder.glob("*"):
+            if item.is_file() and not item.stem.startswith("m_demo"):
+                item.unlink()
     return {"ok": True, "removed_moments": removed}
 
 
@@ -273,16 +274,41 @@ async def live_modeling(ws: WebSocket, scene_id: str) -> None:
 
 # ---------- Moment Builder agent (Muse Wonder) ----------
 
+MAX_INBOX_VIDEO_BYTES = 120 * 1024 * 1024
+
+
+def _inbox_item(m: dict) -> dict:
+    if m["kind"] == "video":
+        return {**m, "url": store.media_url(agent.POSTERS / f"{m['media_id']}.jpg"),
+                "video_url": store.media_url(agent.INBOX / m["file"])}
+    return {**m, "url": store.media_url(agent.INBOX / m["file"])}
+
+
 @app.get("/api/inbox")
 def list_inbox() -> list[dict]:
-    return [{**m, "url": store.media_url(agent.INBOX / m["file"])} for m in agent.list_media()]
+    return [_inbox_item(m) for m in agent.list_media()]
 
 
 @app.post("/api/inbox")
 async def add_to_inbox(photos: list[UploadFile] = File(...)) -> list[dict]:
-    for photo in photos:
-        image, _, _ = scene_pipeline.prepare_image(await photo.read())
-        (agent.INBOX / f"{store.new_id('m_')}.jpg").write_bytes(image)
+    """Today's photos and short videos, waiting for Moment Builder (the field keeps its old name)."""
+    for upload in photos:
+        raw = await upload.read()
+        suffix = Path(upload.filename or "").suffix.lower()
+        if (upload.content_type or "").startswith("video/") or suffix in agent.VIDEO_EXT:
+            if len(raw) > MAX_INBOX_VIDEO_BYTES:
+                raise HTTPException(413, "That video is too large. Keep it under about 20 seconds.")
+            media_id = store.new_id("m_")
+            path = agent.INBOX / f"{media_id}{suffix if suffix in agent.VIDEO_EXT else '.mp4'}"
+            path.write_bytes(raw)
+            try:
+                await asyncio.to_thread(video_pipeline.poster_frame, path, agent.POSTERS / f"{media_id}.jpg")
+            except Exception:
+                path.unlink(missing_ok=True)
+                raise HTTPException(422, "That video could not be read. Try an MP4 or MOV clip.")
+        else:
+            image, _, _ = scene_pipeline.prepare_image(raw)
+            (agent.INBOX / f"{store.new_id('m_')}.jpg").write_bytes(image)
     return list_inbox()
 
 

@@ -82,7 +82,10 @@ export interface Prefs {
 export interface InboxItem {
   media_id: string
   file: string
+  kind: 'photo' | 'video'
+  /** A still for videos, the photo itself otherwise. */
   url: string
+  video_url?: string
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
