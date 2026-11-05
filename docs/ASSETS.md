@@ -34,7 +34,7 @@ Selection rule: everyday moments with several distinct things to tap, and no ide
 
 ## Screenshots
 
-`docs/screens/` are screenshots of the app itself, showing only the Unsplash and Pexels media above and Muse Image illustrations.
+`docs/architecture.png` is an original diagram drawn for this project. `docs/screens/` are screenshots of the app itself, showing only the Unsplash and Pexels media above and Muse Image illustrations.
 
 ## Generated audio
 

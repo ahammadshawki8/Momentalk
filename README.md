@@ -53,45 +53,7 @@ Text to speech uses free edge-tts voices, because Meta does not offer a text to 
 
 ## How it works
 
-```mermaid
-flowchart LR
-  subgraph Client["Phone browser (React PWA)"]
-    CG["Caregiver: Home, Moments, Words, Today"]
-    PV["Person's view: tap to speak"]
-    MIC["Mic, 16 kHz PCM"]
-  end
-  subgraph Server["FastAPI backend"]
-    SB["Scene builder"]
-    VB["Video builder"]
-    LM["Live matcher, no LLM in the hot path"]
-    AG["Moment Builder agent loop"]
-    WS["Wish and avatar"]
-    TTS["Voice cache"]
-    FS[("Data folder")]
-  end
-  PG[("Postgres mirror")]
-  subgraph Meta["Meta Model API"]
-    SPARK["Muse Spark 1.3"]
-    SAM["SAM 3.1 image and video"]
-    ASR["Muse Voice Transcribe"]
-    WONDER["Muse Wonder"]
-    MIMG["Muse Image"]
-  end
-  CG -->|photo, clip| SB & VB
-  CG -->|day's photos| AG
-  CG -->|place, activity| WS
-  MIC --> LM --> ASR
-  LM -->|words heard| PV
-  SB & VB --> SPARK
-  SB & VB --> SAM
-  AG --> WONDER
-  AG -->|tools| SB
-  WS --> MIMG
-  WS --> SB
-  SB & VB & AG & WS --> TTS --> FS
-  FS <--> PG
-  FS --> PV
-```
+![Momentalk architecture: the phone app, the server pipelines, and the Meta models each one calls](docs/architecture.png)
 
 **Photo to talking moment.** Muse Spark (vision, strict JSON schema) plans up to 12 concepts with a SAM phrase, a label, a phrase, and synonyms. SAM 3.1 segments each phrase in parallel. Masks arrive range coded and are decoded with Meta's official `meta-sam-parser`, unioned for groups ("blocks"), deduplicated by IoU, filtered (no backgrounds, nothing over 35 percent of the photo unless it is a person), and turned into simplified polygons. Every phrase is voiced and cached. About 20 seconds end to end.
 
